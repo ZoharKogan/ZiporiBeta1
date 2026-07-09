@@ -11,7 +11,14 @@ export default defineConfig({
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
-    // Emit a Vercel-compatible serverless output for SSR/SPA routing.
-    nitro: { preset: "vercel" },
+  },
+  // Force Nitro to emit Vercel's Build Output API v3 format.
+  nitro: {
+    preset: "vercel",
+    output: {
+      dir: ".vercel/output",
+      serverDir: ".vercel/output/functions/__server.func",
+      publicDir: ".vercel/output/static",
+    },
   },
 });
