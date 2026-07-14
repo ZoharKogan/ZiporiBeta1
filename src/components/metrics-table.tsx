@@ -74,6 +74,7 @@ export function MetricsTable({
 
     return sortedEntries.map(([group, observations]) => ({
       group: translateGroupName(group, lang),
+      rawGroup: group,
       ...computeRow(observations),
     }));
   }, [data, lang]);
@@ -102,9 +103,13 @@ export function MetricsTable({
                 <td className="px-2 py-1 text-center tabular-nums text-xs">{r.observations.toLocaleString()}</td>
                 <td className="px-2 py-1 text-center tabular-nums text-xs">{r.monitoringRate.toFixed(1)}</td>
                 <td className="px-2 py-1 text-center tabular-nums text-xs">
-                  <span className="rounded bg-emerald-soft px-1.5 py-0.5 text-[color:var(--accent-foreground)] text-[10px]">
-                    {r.qualityPct.toFixed(1)}%
-                  </span>
+                  {r.rawGroup === "ניטור מקצועי" || r.rawGroup === "experts" ? (
+                    <span className="text-muted-foreground">-</span>
+                  ) : (
+                    <span className="rounded bg-emerald-soft px-1.5 py-0.5 text-[color:var(--accent-foreground)] text-[10px]">
+                      {r.qualityPct.toFixed(1)}%
+                    </span>
+                  )}
                 </td>
                 <td className="px-2 py-1 text-center tabular-nums text-xs">{r.distinctSpecies.toLocaleString()}</td>
                 <td className="px-2 py-1 text-center tabular-nums text-xs">{r.invasiveSpecies.toLocaleString()}</td>
