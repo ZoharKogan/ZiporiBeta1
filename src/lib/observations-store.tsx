@@ -137,7 +137,9 @@ const TAB_LABEL_TO_GROUP: Record<string, TaxaGroupKey> = {
   "עופות": "birds",
   "פרפרים": "butterflies",
   "שפיראים": "dragonflies",
+  "פורקי רגליים": "arthropods",
   "יונקים": "mammals",
+  "צמחים": "plants",
   "שאר המינים": "other",
 };
 
@@ -169,10 +171,14 @@ export function getTaxaGroup(o: Observation): TaxaGroupKey {
     }
   }
 
-  // 2. Fallback taxonomy
+  // 2. Fallback taxonomy — strict elimination order to prevent double-counting.
+  //    Butterflies and dragonflies are checked via dictionary lookup (step 1) first;
+  //    Insecta/Arachnida only catches remaining arthropods after those are eliminated.
   const iconic = o.iconic_taxon_name;
-  if (iconic === "Aves") return "birds";
+  if (iconic === "Insecta" || iconic === "Arachnida") return "arthropods";
+  if (iconic === "Plantae") return "plants";
   if (iconic === "Mammalia") return "mammals";
+  if (iconic === "Aves") return "birds";
 
   // 3. Default
   return "other";
