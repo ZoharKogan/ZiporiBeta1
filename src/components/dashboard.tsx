@@ -264,11 +264,7 @@ export function Dashboard() {
       <main className="flex h-full w-full flex-col overflow-hidden">
         {/* Top Row: KPIs on edge + Taxa toggles perfectly centered via 3-col grid */}
         <div className="shrink-0 grid grid-cols-[1fr_auto_1fr] items-center min-h-[3.5rem] w-full px-4 py-0.5">
-          <div />
-          <div className="flex justify-center max-w-full overflow-x-auto scrollbar-hide">
-            <TaxaFilterBar />
-          </div>
-          <div className="flex justify-end">
+          <div className="flex justify-start">
             <div className="flex items-center gap-3">
               <div className="flex flex-col items-center">
                 <span className="text-lg font-semibold tabular-nums leading-none">{summary.rows.toLocaleString()}</span>
@@ -284,6 +280,10 @@ export function Dashboard() {
               </div>
             </div>
           </div>
+          <div className="flex justify-center max-w-full overflow-x-auto scrollbar-hide">
+            <TaxaFilterBar />
+          </div>
+          <div />
         </div>
 
         {/* Map Container */}
