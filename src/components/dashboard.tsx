@@ -263,7 +263,7 @@ export function Dashboard() {
   return (
       <main className="flex h-full w-full flex-col overflow-hidden">
         {/* Top Row: KPIs on side + Taxa toggles centered */}
-        <div className="relative shrink-0 flex items-center min-h-[3.5rem] w-full px-4 py-0.5">
+        <div className="shrink-0 flex items-center min-h-[3.5rem] w-full px-4 py-0.5 gap-3">
           <div className="flex items-center gap-3">
             <div className="flex flex-col items-center">
               <span className="text-lg font-semibold tabular-nums leading-none">{summary.rows.toLocaleString()}</span>
@@ -278,7 +278,7 @@ export function Dashboard() {
               <span className="text-[10px] text-muted-foreground leading-tight">{t("uniqueSpecies")}</span>
             </div>
           </div>
-          <div className="absolute left-1/2 -translate-x-1/2">
+          <div className="flex-1 flex justify-center">
             <TaxaFilterBar />
           </div>
         </div>
