@@ -102,11 +102,13 @@ export function ObservationMap({ data }: { data: Observation[] }) {
 
   // Color palette matching taxa tabs (soft/pastel colors)
   const categoryColors: Record<string, { color: string; fillColor: string }> = {
-    birds: { color: "#0ea5e9", fillColor: "#7dd3fc" },      // sky-500, sky-300
+    birds: { color: "#0ea5e9", fillColor: "#7dd3fc" },        // sky-500, sky-300
     butterflies: { color: "#f97316", fillColor: "#fdba74" },  // orange-500, orange-300
-    dragonflies: { color: "#14b8a6", fillColor: "#5eead4" }, // teal-500, teal-300
-    mammals: { color: "#a855f7", fillColor: "#d8b4fe" },    // purple-500, purple-300
-    other: { color: "#6b7280", fillColor: "#d4d4d8" },       // gray-500, gray-300
+    dragonflies: { color: "#14b8a6", fillColor: "#5eead4" },  // teal-500, teal-300
+    arthropods: { color: "#dc2626", fillColor: "#fca5a5" },   // red-600, red-300
+    mammals: { color: "#a855f7", fillColor: "#d8b4fe" },      // purple-500, purple-300
+    plants: { color: "#65a30d", fillColor: "#bef264" },       // lime-600, lime-300
+    other: { color: "#6b7280", fillColor: "#d4d4d8" },        // gray-500, gray-300
   };
 
   const getCategoryColor = (category: string) => {

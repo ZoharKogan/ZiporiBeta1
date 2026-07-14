@@ -51,7 +51,9 @@ const TAXA_TRANSLATIONS: Record<string, { he: string; en: string }> = {
   "עופות": { he: "עופות", en: "Birds" },
   "פרפרים": { he: "פרפרים", en: "Butterflies" },
   "שפיראים": { he: "שפיראים", en: "Dragonflies" },
+  "פורקי רגליים": { he: "פורקי רגליים", en: "Arthropods" },
   "יונקים": { he: "יונקים", en: "Mammals" },
+  "צמחים": { he: "צמחים", en: "Plants" },
   "שאר המינים": { he: "שאר המינים", en: "Other Species" },
 };
 
@@ -104,7 +106,9 @@ export const TAXA_GROUP_KEYS = [
   "birds",
   "butterflies",
   "dragonflies",
+  "arthropods",
   "mammals",
+  "plants",
   "other",
 ] as const;
 export type TaxaGroupKey = (typeof TAXA_GROUP_KEYS)[number];
@@ -228,7 +232,7 @@ export function ObservationsProvider({ children }: { children: ReactNode }) {
   const [observations, setObservations] = useState<Observation[]>([]);
   const [filters, setFilters] = useState<Filters>({
     time: new Map(),
-    taxa: new Set(["birds", "butterflies", "dragonflies", "mammals", "other"]),
+    taxa: new Set(["birds", "butterflies", "dragonflies", "arthropods", "mammals", "plants", "other"]),
     groups: new Set(),
     researchOnly: false,
     areas: new Set(),

@@ -12,7 +12,9 @@ const CATEGORY_COLORS: Record<TaxaGroupKey, { active: string; inactive: string }
   birds: { active: "bg-sky-300 text-sky-900 border-sky-500 border-2 font-semibold", inactive: "bg-gray-50 text-gray-500 border-gray-300 font-normal hover:bg-gray-100" },
   butterflies: { active: "bg-orange-300 text-orange-900 border-orange-500 border-2 font-semibold", inactive: "bg-gray-50 text-gray-500 border-gray-300 font-normal hover:bg-gray-100" },
   dragonflies: { active: "bg-teal-300 text-teal-900 border-teal-500 border-2 font-semibold", inactive: "bg-gray-50 text-gray-500 border-gray-300 font-normal hover:bg-gray-100" },
+  arthropods: { active: "bg-red-300 text-red-900 border-red-500 border-2 font-semibold", inactive: "bg-gray-50 text-gray-500 border-gray-300 font-normal hover:bg-gray-100" },
   mammals: { active: "bg-purple-300 text-purple-900 border-purple-500 border-2 font-semibold", inactive: "bg-gray-50 text-gray-500 border-gray-300 font-normal hover:bg-gray-100" },
+  plants: { active: "bg-lime-300 text-lime-900 border-lime-500 border-2 font-semibold", inactive: "bg-gray-50 text-gray-500 border-gray-300 font-normal hover:bg-gray-100" },
   other: { active: "bg-gray-300 text-gray-900 border-gray-500 border-2 font-semibold", inactive: "bg-gray-50 text-gray-500 border-gray-300 font-normal hover:bg-gray-100" },
 };
 
@@ -23,7 +25,9 @@ const CATEGORY_HEX: Record<TaxaGroupKey, string> = {
   birds: "#0ea5e9",
   butterflies: "#f97316",
   dragonflies: "#14b8a6",
+  arthropods: "#dc2626",
   mammals: "#a855f7",
+  plants: "#65a30d",
   other: "#6b7280",
 };
 
@@ -76,7 +80,9 @@ export function SpeciesDeepDive() {
       birds: [],
       butterflies: [],
       dragonflies: [],
+      arthropods: [],
       mammals: [],
+      plants: [],
       other: [],
     };
 
@@ -86,6 +92,8 @@ export function SpeciesDeepDive() {
       "יונקים": "mammals",
       "פרפרים": "butterflies",
       "שפיראים": "dragonflies",
+      "פורקי רגליים": "arthropods",
+      "צמחים": "plants",
       "חרקים אחרים": "other",
       "שאר המינים": "other"
     };
