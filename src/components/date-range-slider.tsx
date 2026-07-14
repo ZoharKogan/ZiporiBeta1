@@ -7,11 +7,9 @@ type Props = {
   max: number;
   value: [number, number];
   onChange: (value: [number, number]) => void;
-  /** Set of actively selected year strings (e.g. "2023"). When provided, years absent from this set render as grey gaps on the track. */
-  selectedYears?: Set<string>;
 };
 
-export function DateRangeSlider({ min, max, value, onChange, selectedYears }: Props) {
+export function DateRangeSlider({ min, max, value, onChange }: Props) {
   const { lang, dir } = useI18n();
   const isRtl = dir === "rtl";
   const locale = lang === "he" ? "he-IL" : "en-US";
@@ -27,26 +25,6 @@ export function DateRangeSlider({ min, max, value, onChange, selectedYears }: Pr
     },
     [onChange],
   );
-
-  // Compute grey gap overlays for deselected years within the slider range
-  const gapOverlays = useMemo(() => {
-    if (!selectedYears || selectedYears.size === 0) return [];
-    const totalRange = max - min;
-    if (totalRange <= 0) return [];
-    const startYear = new Date(min).getFullYear();
-    const endYear = new Date(max).getFullYear();
-    const gaps: { left: number; width: number }[] = [];
-    for (let y = startYear; y <= endYear; y++) {
-      if (selectedYears.has(String(y))) continue;
-      const yearStart = Math.max(new Date(y, 0, 1).getTime(), min);
-      const yearEnd = Math.min(new Date(y, 11, 31, 23, 59, 59, 999).getTime(), max);
-      if (yearStart >= yearEnd) continue;
-      const left = ((yearStart - min) / totalRange) * 100;
-      const right = ((yearEnd - min) / totalRange) * 100;
-      gaps.push({ left, width: right - left });
-    }
-    return gaps;
-  }, [min, max, selectedYears]);
 
   // Generate 6-month tick marks (Jan & Jul of each year in range)
   const ticks = useMemo(() => {
@@ -79,13 +57,6 @@ export function DateRangeSlider({ min, max, value, onChange, selectedYears }: Pr
       >
         <SliderPrimitive.Track className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-gray-200">
           <SliderPrimitive.Range className="absolute h-full bg-yellow-400" />
-          {gapOverlays.map((gap, i) => (
-            <div
-              key={i}
-              className="absolute h-full bg-gray-300 pointer-events-none z-10"
-              style={{ left: `${gap.left}%`, width: `${gap.width}%` }}
-            />
-          ))}
         </SliderPrimitive.Track>
         <SliderPrimitive.Thumb className="block h-4 w-4 rounded-full border-2 border-yellow-500 bg-white shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 disabled:pointer-events-none disabled:opacity-50 cursor-grab active:cursor-grabbing" />
         <SliderPrimitive.Thumb className="block h-4 w-4 rounded-full border-2 border-yellow-500 bg-white shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 disabled:pointer-events-none disabled:opacity-50 cursor-grab active:cursor-grabbing" />
