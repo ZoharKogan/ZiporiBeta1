@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from "react";
-import { MapContainer, TileLayer, CircleMarker, Polygon, useMap } from "react-leaflet";
+import { useEffect, useMemo, useState } from "react";
+import { MapContainer, TileLayer, CircleMarker, Polygon, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import type { Observation } from "@/lib/observations-store";
 import { useObservations, translateSpeciesName, getTaxaGroup } from "@/lib/observations-store";
@@ -15,11 +15,30 @@ function FitBounds({ obs }: { obs: Observation[] }) {
   return null;
 }
 
+function ZoomTracker({ onZoom }: { onZoom: (z: number) => void }) {
+  useMapEvents({
+    zoomend: (e) => onZoom(e.target.getZoom()),
+  });
+  return null;
+}
+
+function PaneSetup() {
+  const map = useMap();
+  useEffect(() => {
+    if (!map.getPane("polygonPane")) {
+      const pane = map.createPane("polygonPane");
+      pane.style.zIndex = "500";
+      pane.style.pointerEvents = "none";
+    }
+  }, [map]);
+  return null;
+}
+
 export function ObservationMap({ data }: { data: Observation[] }) {
   const { filters } = useObservations();
   const selectedAreas = new Set(filters.areas) as Set<SurveyAreaKey>;
-  const hasOtherAreas = selectedAreas.has("other_areas");
   const baseAreaKeys = SURVEY_AREA_KEYS.filter((k) => k !== "other_areas");
+  const [zoom, setZoom] = useState<number>(7);
 
   const center: [number, number] = data[0]
     ? [data[0].latitude, data[0].longitude]
@@ -111,26 +130,37 @@ export function ObservationMap({ data }: { data: Observation[] }) {
           attribution='&copy; OpenStreetMap'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <PaneSetup />
         <FitBounds obs={data} />
+        <ZoomTracker onZoom={setZoom} />
         {baseAreaKeys.map((areaKey) => {
           const rings = SURVEY_POLYGONS[areaKey];
           if (!rings) return null;
           const isSelected = selectedAreas.has(areaKey);
-          if (!isSelected && !hasOtherAreas) return null;
+          const zoomedOut = zoom <= 13;
+          const pathOptions = isSelected
+            ? {
+                color: AREA_COLORS[areaKey],
+                fillColor: AREA_COLORS[areaKey],
+                fillOpacity: zoomedOut ? 0.6 : 0.35,
+                weight: zoomedOut ? 11 : 4,
+                opacity: 1,
+                interactive: false,
+              }
+            : {
+                color: "#374151",
+                fillColor: "#374151",
+                fillOpacity: 0.03,
+                weight: 1.5,
+                opacity: 0.6,
+                interactive: false,
+              };
           return (
             <Polygon
               key={areaKey}
               positions={rings.map(ringToLatLng)}
-              pathOptions={{
-                color: isSelected ? AREA_COLORS[areaKey] : "#374151",
-                fillColor: isSelected ? AREA_COLORS[areaKey] : "#6b7280",
-                fillOpacity: isSelected ? 0.35 : 0.18,
-                weight: isSelected ? 5 : 3,
-                opacity: isSelected ? 1 : 0.75,
-                dashArray: isSelected ? undefined : "6, 5",
-                interactive: false,
-              }}
-              className={isSelected ? "polygon-selected" : undefined}
+              pathOptions={pathOptions}
+              pane="polygonPane"
             />
           );
         })}

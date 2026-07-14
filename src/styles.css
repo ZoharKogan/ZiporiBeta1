@@ -87,11 +87,6 @@
 /* Leaflet markers fix when bundled */
 .leaflet-container { font-family: inherit; }
 
-/* Selected polygon glow emphasis */
-.polygon-selected path {
-  filter: drop-shadow(0 0 6px currentColor);
-}
-
 /* Hide scrollbar but keep scrolling */
 .scrollbar-hide {
   -ms-overflow-style: none;
