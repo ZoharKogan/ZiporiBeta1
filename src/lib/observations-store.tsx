@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, useCallback, type ReactNode } from "react";
 import Papa from "papaparse";
 import type { SurveyAreaKey } from "./survey-polygons";
+import { SURVEY_AREA_KEYS } from "./survey-polygons";
 import { getSpeciesHebrewName } from "./species-dictionary";
 import { speciesMap } from "@/lib/species-map";
 import { classifySpecies } from "./species-registry";
@@ -241,8 +242,8 @@ export function ObservationsProvider({ children }: { children: ReactNode }) {
     taxa: new Set(["birds", "butterflies", "dragonflies", "arthropods", "mammals", "plants", "other"]),
     groups: new Set(),
     researchOnly: false,
-    areas: new Set(),
-    speciesTypes: new Set(),
+    areas: new Set<SurveyAreaKey>(SURVEY_AREA_KEYS),
+    speciesTypes: new Set(["invasive", "rare", "other_species"]),
     dateRange: null,
   });
 
@@ -356,6 +357,7 @@ export function ObservationsProvider({ children }: { children: ReactNode }) {
         let minTs = Infinity;
         let maxTs = -Infinity;
         const yearsInData = new Set<string>();
+        const groupsInData = new Set<string>();
         for (const obs of joinedObservations) {
           const d = obs.observed_on;
           if (!d || d.length < 10) continue;
@@ -369,6 +371,7 @@ export function ObservationsProvider({ children }: { children: ReactNode }) {
           if (ts < minTs) minTs = ts;
           if (ts > maxTs) maxTs = ts;
           yearsInData.add(parts[2]);
+          if (obs.user_category) groupsInData.add(obs.user_category);
         }
 
         if (minTs !== Infinity) {
@@ -383,10 +386,12 @@ export function ObservationsProvider({ children }: { children: ReactNode }) {
           for (const y of yearsInData) {
             defaultTime.set(y, new Set());
           }
+          groupsInData.add("ניטור מקצועי"); // Always include Professional Monitoring
           setFilters((prev) => ({
             ...prev,
             time: defaultTime,
             dateRange: { start: boundsStart, end: boundsEnd },
+            groups: new Set(groupsInData),
           }));
         }
       } catch (error) {
