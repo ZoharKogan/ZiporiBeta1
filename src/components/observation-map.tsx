@@ -117,20 +117,20 @@ export function ObservationMap({ data }: { data: Observation[] }) {
           if (!rings) return null;
           const isSelected = selectedAreas.has(areaKey);
           if (!isSelected && !hasOtherAreas) return null;
-          const color = isSelected ? AREA_COLORS[areaKey] : "#4b5563";
           return (
             <Polygon
               key={areaKey}
               positions={rings.map(ringToLatLng)}
               pathOptions={{
-                color,
-                fillColor: isSelected ? AREA_COLORS[areaKey] : "#9ca3af",
-                fillOpacity: isSelected ? 0.2 : 0.15,
-                weight: isSelected ? 2 : 4,
-                opacity: 0.8,
-                dashArray: isSelected ? undefined : "10, 10",
+                color: isSelected ? AREA_COLORS[areaKey] : "#374151",
+                fillColor: isSelected ? AREA_COLORS[areaKey] : "#6b7280",
+                fillOpacity: isSelected ? 0.35 : 0.18,
+                weight: isSelected ? 5 : 3,
+                opacity: isSelected ? 1 : 0.75,
+                dashArray: isSelected ? undefined : "6, 5",
                 interactive: false,
               }}
+              className={isSelected ? "polygon-selected" : undefined}
             />
           );
         })}
