@@ -172,6 +172,7 @@ function GlobalDateRangeBar() {
         max={datasetBounds.end}
         value={[filters.dateRange.start, filters.dateRange.end]}
         onChange={([start, end]) => setDateRange(start, end)}
+        selectedYears={new Set(filters.time.keys())}
       />
     </div>
   );

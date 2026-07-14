@@ -50,33 +50,35 @@ export function MetricsTable({
   const { t, lang } = useI18n();
 
   const rows = useMemo(() => {
+    // Build a lookup of observations per raw user_category key from filtered data
     const grouped = new Map<string, Observation[]>();
     for (const o of data) {
       const category = o.user_category || "ציבור רחב";
-      if (!grouped.has(category)) {
-        grouped.set(category, []);
-      }
+      if (!grouped.has(category)) grouped.set(category, []);
       grouped.get(category)!.push(o);
     }
 
-    // Ensure "ניטור מקצועי" always has a row
-    if (!grouped.has("ניטור מקצועי") && !grouped.has("experts")) {
-      grouped.set("ניטור מקצועי", []);
-    }
+    // Fixed canonical group list — rows always present regardless of data
+    const CANONICAL_GROUPS: { raw: string; matchKeys: string[] }[] = [
+      { raw: "קהילה",        matchKeys: ["קהילה", "community"] },
+      { raw: "ניטור מקצועי", matchKeys: ["ניטור מקצועי", "experts"] },
+      { raw: "תלמידים",      matchKeys: ["תלמידים", "סטודנטים", "student"] },
+      { raw: "ציבור רחב",    matchKeys: ["ציבור רחב"] },
+    ];
 
-    // Force specific order: Community -> Professional Monitoring -> Students -> General Public
-    const order = ["קהילה", "community", "ניטור מקצועי", "experts", "תלמידים", "סטודנטים", "student", "ציבור רחב"];
-    const sortedEntries = Array.from(grouped.entries()).sort((a, b) => {
-      const aIndex = order.findIndex(key => a[0].includes(key)) ?? 999;
-      const bIndex = order.findIndex(key => b[0].includes(key)) ?? 999;
-      return aIndex - bIndex;
+    return CANONICAL_GROUPS.map(({ raw, matchKeys }) => {
+      // Collect observations for all matching raw keys
+      const obs: Observation[] = [];
+      for (const key of matchKeys) {
+        const bucket = grouped.get(key);
+        if (bucket) obs.push(...bucket);
+      }
+      return {
+        group: translateGroupName(raw, lang),
+        rawGroup: raw,
+        ...computeRow(obs),
+      };
     });
-
-    return sortedEntries.map(([group, observations]) => ({
-      group: translateGroupName(group, lang),
-      rawGroup: group,
-      ...computeRow(observations),
-    }));
   }, [data, lang]);
 
   return (
