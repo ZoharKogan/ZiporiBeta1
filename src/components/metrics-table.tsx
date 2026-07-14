@@ -59,13 +59,13 @@ export function MetricsTable({
       grouped.get(category)!.push(o);
     }
 
-    // Ensure "מומחים" always has a row
-    if (!grouped.has("מומחים") && !grouped.has("experts")) {
-      grouped.set("מומחים", []);
+    // Ensure "ניטור מקצועי" always has a row
+    if (!grouped.has("ניטור מקצועי") && !grouped.has("experts")) {
+      grouped.set("ניטור מקצועי", []);
     }
 
-    // Force specific order: Community -> Experts -> Students -> General Public
-    const order = ["קהילה", "community", "מומחים", "experts", "תלמידים", "סטודנטים", "student", "ציבור רחב"];
+    // Force specific order: Community -> Professional Monitoring -> Students -> General Public
+    const order = ["קהילה", "community", "ניטור מקצועי", "experts", "תלמידים", "סטודנטים", "student", "ציבור רחב"];
     const sortedEntries = Array.from(grouped.entries()).sort((a, b) => {
       const aIndex = order.findIndex(key => a[0].includes(key)) ?? 999;
       const bIndex = order.findIndex(key => b[0].includes(key)) ?? 999;

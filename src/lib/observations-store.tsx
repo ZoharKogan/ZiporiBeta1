@@ -27,8 +27,8 @@ const GROUP_TRANSLATIONS: Record<string, { he: string; en: string }> = {
   "קהילה": { he: "קהילת המדע האזרחי", en: "Citizen science community" },
   "student": { he: "תלמידים", en: "Students" },
   "community": { he: "קהילת המדע האזרחי", en: "Citizen science community" },
-  "מומחים": { he: "מומחים", en: "Experts" },
-  "experts": { he: "מומחים", en: "Experts" },
+  "מומחים": { he: "ניטור מקצועי", en: "Professional Monitoring" },
+  "experts": { he: "ניטור מקצועי", en: "Professional Monitoring" },
   "professional": { he: "אנשי מקצוע", en: "Professionals" },
 };
 

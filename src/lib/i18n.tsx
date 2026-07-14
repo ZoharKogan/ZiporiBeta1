@@ -59,7 +59,7 @@ const dict: Dict = {
   qualityGrade: { he: "דרגת איכות", en: "Quality Grade" },
   general_public: { he: "קהל רחב", en: "General Public" },
   community: { he: "קהילה", en: "Community" },
-  experts: { he: "מומחים", en: "Experts" },
+  experts: { he: "ניטור מקצועי", en: "Professional Monitoring" },
   students: { he: "תלמידים", en: "Students" },
   professionals: { he: "אנשי מקצוע", en: "Professionals" },
   loading: { he: "טוען…", en: "Loading…" },
@@ -80,7 +80,7 @@ const dict: Dict = {
 const groupKeyMap: Record<string, keyof typeof dict> = {
   "General Public": "general_public",
   Community: "community",
-  Experts: "experts",
+  "Professional Monitoring": "experts",
   Students: "students",
   Professionals: "professionals",
 };
@@ -131,4 +131,4 @@ export function useI18n() {
   return c;
 }
 
-export const USER_GROUPS = ["General Public", "Community", "Experts", "Students", "Professionals"] as const;
+export const USER_GROUPS = ["General Public", "Community", "Professional Monitoring", "Students", "Professionals"] as const;
