@@ -60,8 +60,8 @@ export function MetricsTable({
 
     // Fixed canonical group list — rows always present regardless of data
     const CANONICAL_GROUPS: { raw: string; matchKeys: string[] }[] = [
-      { raw: "קהילה",        matchKeys: ["קהילה", "community"] },
       { raw: "ניטור מקצועי", matchKeys: ["ניטור מקצועי", "experts"] },
+      { raw: "קהילה",        matchKeys: ["קהילה", "community"] },
       { raw: "תלמידים",      matchKeys: ["תלמידים", "סטודנטים", "student"] },
       { raw: "ציבור רחב",    matchKeys: ["ציבור רחב"] },
     ];

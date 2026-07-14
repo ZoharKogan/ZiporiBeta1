@@ -11,10 +11,10 @@ import type { Observation } from "@/lib/observations-store";
 const PROFESSIONAL_MONITORING_KEY = "ניטור מקצועי";
 
 const GROUP_CONFIG = [
+  { key: PROFESSIONAL_MONITORING_KEY, color: "#6366F1", shape: "diamond"  as const },
   { key: "community",              color: "#000000", shape: "circle"   as const },
   { key: "student",                color: "#4A4A4A", shape: "cross"    as const },
   { key: "ציבור רחב",             color: "#B0B0B0", shape: "triangle" as const },
-  { key: PROFESSIONAL_MONITORING_KEY, color: "#6366F1", shape: "diamond"  as const },
 ] as const;
 
 // Canonical raw-key order for deterministic slot assignment

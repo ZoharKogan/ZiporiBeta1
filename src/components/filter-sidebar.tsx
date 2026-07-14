@@ -53,7 +53,7 @@ export function FilterSidebar() {
     }
     categories.add("ניטור מקצועי"); // Always show Professional Monitoring even if no data yet
     // Fixed display order
-    const order = ["קהילה", "community", "ניטור מקצועי", "experts", "תלמידים", "סטודנטים", "student", "ציבור רחב"];
+    const order = ["ניטור מקצועי", "experts", "קהילה", "community", "תלמידים", "סטודנטים", "student", "ציבור רחב"];
     return Array.from(categories).sort((a, b) => {
       const ai = order.findIndex((k) => a.includes(k));
       const bi = order.findIndex((k) => b.includes(k));
