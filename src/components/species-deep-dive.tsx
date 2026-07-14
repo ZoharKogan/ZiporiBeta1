@@ -151,8 +151,8 @@ export function SpeciesDeepDive() {
   return (
     <main className="flex h-full w-full flex-col overflow-hidden">
       {/* Top Row: KPIs on side + Category tabs centered */}
-      <div className="relative shrink-0 flex items-center min-h-[3.5rem] w-full px-4 py-0.5">
-        <div className="flex items-center gap-3">
+      <div className="shrink-0 flex items-center min-h-[3.5rem] w-full px-4 py-0.5 gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <div className="flex flex-col items-center">
             <span className="text-lg font-semibold tabular-nums leading-none">{summary.rows.toLocaleString()}</span>
             <span className="text-[10px] text-muted-foreground leading-tight">{t("totalRows")}</span>
@@ -166,7 +166,7 @@ export function SpeciesDeepDive() {
             <span className="text-[10px] text-muted-foreground leading-tight">{t("uniqueSpecies")}</span>
           </div>
         </div>
-        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 overflow-x-auto scrollbar-hide">
+        <div className="flex flex-1 flex-wrap items-center justify-center gap-2">
           {categories.map((cat) => {
             const colors = CATEGORY_COLORS[cat] || DEFAULT_COLOR;
             const isActive = category === cat;
