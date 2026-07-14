@@ -3,8 +3,7 @@ import Papa from "papaparse";
 import type { SurveyAreaKey } from "./survey-polygons";
 import { SURVEY_AREA_KEYS } from "./survey-polygons";
 import { getSpeciesHebrewName } from "./species-dictionary";
-import { speciesMap } from "@/lib/species-map";
-import { classifySpecies } from "./species-registry";
+import { getTaxonCategory, getTaxonStatus } from "./taxonomy-engine";
 export type { SurveyAreaKey };
 
 export type Observation = {
@@ -151,23 +150,18 @@ const _rareSciMap = new Map<string, TaxaGroupKey>(
   RARE_SPECIES.map((s) => [s.sci, TAB_LABEL_TO_GROUP[s.tab] ?? "other"])
 );
 
-/** Fast lookup from scientific name to its dictionary category. */
-const _speciesMapCategoryBySci = new Map<string, string>(
-  speciesMap.map((entry) => [entry.Scientific_Name, entry.Category])
-);
-
 /** Map an observation to one of our high-level dashboard groups.
- *  1. Look up the scientific_name in the global species dictionary.
+ *  1. Look up the scientific_name via the taxonomy engine (unified dictionary).
  *  2. If not found, fall back to iconic_taxon_name (Aves/Mammalia → birds/mammals).
  *  3. Default → "other".
  */
 export function getTaxaGroup(o: Observation): TaxaGroupKey {
   const sci = o.scientific_name;
 
-  // 1. Dictionary lookup
+  // 1. Taxonomy engine lookup
   if (sci) {
-    const category = _speciesMapCategoryBySci.get(sci);
-    if (category) {
+    const category = getTaxonCategory(sci);
+    if (category !== "שאר המינים") {
       return TAB_LABEL_TO_GROUP[category] ?? "other";
     }
   }
@@ -185,11 +179,11 @@ export function getTaxaGroup(o: Observation): TaxaGroupKey {
   return "other";
 }
 
-/** Classify an observation as invasive, rare, or other_species using the master registry.
+/** Classify an observation as invasive, rare, or other_species using the taxonomy engine.
  *  Any species not listed in the registry defaults to other_species.
  */
 export function getSpeciesClassification(o: Observation): string {
-  const status = classifySpecies(o.scientific_name);
+  const status = getTaxonStatus(o.scientific_name);
   return status === "other" ? "other_species" : status;
 }
 
