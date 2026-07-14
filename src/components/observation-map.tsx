@@ -137,24 +137,16 @@ export function ObservationMap({ data }: { data: Observation[] }) {
           const rings = SURVEY_POLYGONS[areaKey];
           if (!rings) return null;
           const isSelected = selectedAreas.has(areaKey);
+          if (!isSelected) return null;
           const zoomedOut = zoom <= 13;
-          const pathOptions = isSelected
-            ? {
-                color: AREA_COLORS[areaKey],
-                fillColor: AREA_COLORS[areaKey],
-                fillOpacity: zoomedOut ? 0.6 : 0.35,
-                weight: zoomedOut ? 11 : 4,
-                opacity: 1,
-                interactive: false,
-              }
-            : {
-                color: "#374151",
-                fillColor: "#374151",
-                fillOpacity: 0.03,
-                weight: 1.5,
-                opacity: 0.6,
-                interactive: false,
-              };
+          const pathOptions = {
+            color: AREA_COLORS[areaKey],
+            fillColor: AREA_COLORS[areaKey],
+            fillOpacity: zoomedOut ? 0.6 : 0.35,
+            weight: zoomedOut ? 11 : 4,
+            opacity: 1,
+            interactive: false,
+          };
           return (
             <Polygon
               key={areaKey}
