@@ -25,13 +25,13 @@ export function TaxaFilterBar() {
   ];
 
   return (
-    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+    <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
       {taxaButtons.map(({ key, label, activeColor, inactiveColor }) => (
         <button
           key={key}
           type="button"
           onClick={() => toggleTaxa(key)}
-          className={`shrink-0 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium transition-all duration-200 ${
+          className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium transition-all duration-200 whitespace-nowrap ${
             filters.taxa.has(key) ? activeColor : inactiveColor
           }`}
         >
