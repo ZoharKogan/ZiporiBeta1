@@ -7,11 +7,12 @@ type Props = {
   max: number;
   value: [number, number];
   onChange: (value: [number, number]) => void;
+  /** Selected year strings (e.g. "2023"). Years between the two thumbs but absent here get a grey mask painted over the yellow Range. */
+  selectedYears?: Set<string>;
 };
 
-export function DateRangeSlider({ min, max, value, onChange }: Props) {
-  const { lang, dir } = useI18n();
-  const isRtl = dir === "rtl";
+export function DateRangeSlider({ min, max, value, onChange, selectedYears }: Props) {
+  const { lang } = useI18n();
   const locale = lang === "he" ? "he-IL" : "en-US";
 
   const tickFormatter = useMemo(
@@ -25,6 +26,28 @@ export function DateRangeSlider({ min, max, value, onChange }: Props) {
     },
     [onChange],
   );
+
+  // Compute mask overlays for deselected years strictly between the two slider thumbs
+  const gapMasks = useMemo(() => {
+    if (!selectedYears) return [];
+    const [thumbStart, thumbEnd] = value;
+    const totalRange = max - min;
+    if (totalRange <= 0 || thumbStart >= thumbEnd) return [];
+    const startYear = new Date(thumbStart).getFullYear();
+    const endYear = new Date(thumbEnd).getFullYear();
+    const masks: { left: number; width: number }[] = [];
+    for (let y = startYear; y <= endYear; y++) {
+      if (selectedYears.has(String(y))) continue;
+      // Clamp to [thumbStart, thumbEnd] so mask never bleeds outside active range
+      const maskStart = Math.max(new Date(y, 0, 1).getTime(), thumbStart);
+      const maskEnd = Math.min(new Date(y, 11, 31, 23, 59, 59, 999).getTime(), thumbEnd);
+      if (maskStart >= maskEnd) continue;
+      const left = ((maskStart - min) / totalRange) * 100;
+      const width = ((maskEnd - maskStart) / totalRange) * 100;
+      masks.push({ left, width });
+    }
+    return masks;
+  }, [min, max, value, selectedYears]);
 
   // Generate 6-month tick marks (Jan & Jul of each year in range)
   const ticks = useMemo(() => {
@@ -47,7 +70,7 @@ export function DateRangeSlider({ min, max, value, onChange }: Props) {
   return (
     <div className="relative flex flex-col w-full px-8">
       <SliderPrimitive.Root
-        dir={isRtl ? "rtl" : "ltr"}
+        dir="ltr"
         className="relative flex w-full touch-none select-none items-center"
         min={min}
         max={max}
@@ -55,8 +78,15 @@ export function DateRangeSlider({ min, max, value, onChange }: Props) {
         value={value}
         onValueChange={handleChange}
       >
-        <SliderPrimitive.Track className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-gray-200">
+        <SliderPrimitive.Track className="relative h-1.5 w-full grow rounded-full bg-gray-200">
           <SliderPrimitive.Range className="absolute h-full bg-yellow-400" />
+          {gapMasks.map((mask, i) => (
+            <div
+              key={i}
+              className="absolute h-full bg-gray-200 pointer-events-none"
+              style={{ left: `${mask.left}%`, width: `${mask.width}%`, zIndex: 20 }}
+            />
+          ))}
         </SliderPrimitive.Track>
         <SliderPrimitive.Thumb className="block h-4 w-4 rounded-full border-2 border-yellow-500 bg-white shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 disabled:pointer-events-none disabled:opacity-50 cursor-grab active:cursor-grabbing" />
         <SliderPrimitive.Thumb className="block h-4 w-4 rounded-full border-2 border-yellow-500 bg-white shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 disabled:pointer-events-none disabled:opacity-50 cursor-grab active:cursor-grabbing" />
