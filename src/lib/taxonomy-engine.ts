@@ -112,6 +112,10 @@ export function getTaxonDetails(
       category = "צמחים";
     } else if (iconic === "Insecta" || iconic === "Arachnida") {
       category = "פורקי רגליים";
+    } else if (iconic === "Aves") {
+      category = "עופות";
+    } else if (iconic === "Mammalia") {
+      category = "יונקים";
     } else {
       category = "שאר המינים";
     }
