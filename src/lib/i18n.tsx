@@ -69,6 +69,7 @@ const dict: Dict = {
   totalRows: { he: "סך תצפיות מסוננות", en: "Filtered observations" },
   uniqueObservers: { he: "סה״כ מנטרים", en: "Total Monitors" },
   uniqueSpecies: { he: "סה״כ מינים", en: "Total Species" },
+  unidentified: { he: "לא מזוהה", en: "Unidentified" },
   speciesType: { he: "סוג מין", en: "Species Type" },
   otherSpecies: { he: "שאר המינים", en: "Other Species" },
   areas: { he: "אזורים", en: "Areas" },

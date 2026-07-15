@@ -1,17 +1,17 @@
 /**
  * taxonomy-engine.ts — Single Source of Truth for species taxonomy.
  *
- * Aggregates data from:
- *   - species-map.ts     (scientific name → category + Hebrew/English names)
- *   - species-registry.ts (scientific name → invasive | rare | other)
+ * Reads from:
+ *   - master-species-map.ts (generated from the full CSV dataset)
+ *   - species-registry.ts    (invasive | rare | other classification)
  *
  * Public API:
- *   getTaxonDetails(scientificName, iconicTaxon?, commonName?) → TaxonDetails
- *   getTaxonCategory(scientificName, iconicTaxon?, commonName?) → canonical Hebrew category string
+ *   getTaxonDetails(scientificName) → TaxonDetails
+ *   getTaxonCategory(scientificName) → canonical Hebrew category string
  *   getTaxonStatus(scientificName)   → SpeciesStatus
  */
 
-import { speciesMap } from "./species-map";
+import { masterSpeciesMap, type MasterSpeciesEntry } from "./master-species-map";
 import { classifySpecies, type SpeciesStatus } from "./species-registry";
 
 // ─── Canonical category keys (Hebrew labels used throughout the app) ──────────
@@ -31,29 +31,24 @@ export type CanonicalCategory = (typeof CANONICAL_CATEGORIES)[number];
 export type TaxonDetails = {
   /** Display name: Hebrew common name if available, else scientific name. */
   name: string;
-  /** Hebrew scientific name for English display fallback. */
+  /** English display name for language toggle. */
   englishName: string;
   /** Canonical Hebrew category (e.g. "פרפרים", "עופות"). */
   category: CanonicalCategory;
   /** Invasive / rare / other classification. */
   status: SpeciesStatus;
-  /** True if the resolved display name is a generic term like "צמחים" / "חרקים". */
+  /** True if this observation is not identified to species level. */
   isGeneric: boolean;
 };
 
-// ─── Build fast lookup map from speciesMap ────────────────────────────────────
-const _byScientificName = new Map<string, { hebrewName: string; englishName: string; category: string }>(
-  speciesMap.map((e) => [
-    e.Scientific_Name.trim().toLowerCase(),
-    { hebrewName: e.Hebrew_Name, englishName: e.English_Name, category: e.Category },
-  ])
+// ─── Build fast lookup map from master species map ────────────────────────────
+const _byScientificName = new Map<string, MasterSpeciesEntry>(
+  masterSpeciesMap.map((e) => [e.scientific_name.trim().toLowerCase(), e])
 );
 
-// Normalize a raw category string to a CanonicalCategory, defaulting to "שאר המינים"
 function normalizeCategory(raw: string | undefined): CanonicalCategory {
   if (!raw) return "שאר המינים";
   const trimmed = raw.trim();
-  if (trimmed === "חרקים אחרים") return "פורקי רגליים";
   if ((CANONICAL_CATEGORIES as readonly string[]).includes(trimmed)) {
     return trimmed as CanonicalCategory;
   }
@@ -62,76 +57,36 @@ function normalizeCategory(raw: string | undefined): CanonicalCategory {
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-/** Generic Hebrew terms that should display as "לא מזוהה" (Unidentified). */
-const GENERIC_TERMS = [
-  "עופות",
-  "יונקים",
-  "פרפרים",
-  "שפיראים",
-  "פורקי רגליים",
-  "צמחים",
-  "בעלי חיים",
-  "חרקים",
-  "דגים",
-  "זוחלים",
-] as const;
-
-/** Returns true if the display name is a generic category label. */
-function isGenericName(name: string | undefined): boolean {
-  if (!name) return false;
-  const trimmed = name.trim();
-  return GENERIC_TERMS.some((term) => trimmed === term || trimmed.includes(term));
-}
-
 /**
  * Returns the full canonical details for a species by scientific name.
- * Falls back gracefully for unknown species.
+ * Only the master species map is consulted; unknown species are returned as
+ * "לא מזוהה" / "שאר המינים" / isGeneric=true.
  */
 export function getTaxonDetails(
   scientificName: string,
-  iconicTaxon?: string,
-  commonName?: string
+  _iconicTaxon?: string,
+  _commonName?: string
 ): TaxonDetails {
   const key = (scientificName ?? "").trim().toLowerCase();
   const entry = _byScientificName.get(key);
   const status = classifySpecies(scientificName);
 
-  // Resolve raw display name from the best available source
-  let rawName: string;
-  let englishName = "";
-  let category: CanonicalCategory;
-
-  if (entry) {
-    rawName = entry.hebrewName && entry.hebrewName !== "N/A" ? entry.hebrewName : scientificName;
-    englishName = entry.englishName && entry.englishName !== "N/A" ? entry.englishName : "";
-    category = normalizeCategory(entry.category);
-  } else {
-    // Dynamic fallback for unknown species from CSV fields
-    const iconic = (iconicTaxon ?? "").trim();
-    if (iconic === "Plantae") {
-      category = "צמחים";
-    } else if (iconic === "Insecta" || iconic === "Arachnida") {
-      category = "פורקי רגליים";
-    } else if (iconic === "Aves") {
-      category = "עופות";
-    } else if (iconic === "Mammalia") {
-      category = "יונקים";
-    } else {
-      category = "שאר המינים";
-    }
-    rawName = (commonName ?? scientificName) || "לא מזוהה";
+  if (!entry) {
+    return {
+      name: scientificName || "לא מזוהה",
+      englishName: "",
+      category: "שאר המינים",
+      status,
+      isGeneric: true,
+    };
   }
 
-  // Generic-term override: ghost species display as "לא מזוהה"
-  const isGeneric = isGenericName(rawName);
-  const name = isGeneric ? "לא מזוהה" : rawName || "לא מזוהה";
-
   return {
-    name,
-    englishName,
-    category,
+    name: entry.hebrew_name && entry.hebrew_name !== "N/A" ? entry.hebrew_name : entry.scientific_name,
+    englishName: entry.english_name && entry.english_name !== "N/A" ? entry.english_name : "",
+    category: normalizeCategory(entry.canonical_category),
     status,
-    isGeneric,
+    isGeneric: entry.isGeneric,
   };
 }
 
@@ -141,10 +96,10 @@ export function getTaxonDetails(
  */
 export function getTaxonCategory(
   scientificName: string,
-  iconicTaxon?: string,
-  commonName?: string
+  _iconicTaxon?: string,
+  _commonName?: string
 ): CanonicalCategory {
-  return getTaxonDetails(scientificName, iconicTaxon, commonName).category;
+  return getTaxonDetails(scientificName).category;
 }
 
 /**

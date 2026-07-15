@@ -139,15 +139,17 @@ export function SpeciesDeepDive() {
   const summary = useMemo(() => {
     const observers = new Set<string>();
     const speciesSet = new Set<string>();
+    let unidentified = 0;
     for (const o of deepDiveFiltered) {
       if (o.user_login) observers.add(o.user_login);
       const details = getTaxonDetails(o.scientific_name, o.iconic_taxon_name, o.common_name);
-      // Keep generic/unidentified observations in total rows, but don't count them as unique species
-      if (o.scientific_name && !details.isGeneric) {
+      if (details.isGeneric) {
+        unidentified++;
+      } else if (o.scientific_name) {
         speciesSet.add(o.scientific_name);
       }
     }
-    return { rows: deepDiveFiltered.length, observers: observers.size, species: speciesSet.size };
+    return { rows: deepDiveFiltered.length, observers: observers.size, species: speciesSet.size, unidentified };
   }, [deepDiveFiltered]);
 
   // Dynamic observation counts per category from the loaded CSV data
@@ -187,6 +189,10 @@ export function SpeciesDeepDive() {
           <div className="flex flex-col items-center">
             <span className="text-lg font-semibold tabular-nums leading-none">{summary.species.toLocaleString()}</span>
             <span className="text-[10px] text-muted-foreground leading-tight">{t("uniqueSpecies")}</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="text-lg font-semibold tabular-nums leading-none">{summary.unidentified.toLocaleString()}</span>
+            <span className="text-[10px] text-muted-foreground leading-tight">{t("unidentified")}</span>
           </div>
         </div>
         <div className="flex flex-1 flex-wrap items-center justify-center gap-2">
