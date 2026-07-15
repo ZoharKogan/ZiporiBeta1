@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useObservations, getTaxaGroup, TAXA_GROUP_KEYS, type TaxaGroupKey } from "@/lib/observations-store";
 import { useI18n } from "@/lib/i18n";
-import { speciesMap, type SpeciesInfo } from "@/lib/species-map";
+import { masterSpeciesMap, type MasterSpeciesEntry } from "@/lib/master-species-map";
 import { getTaxonDetails } from "@/lib/taxonomy-engine";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,7 @@ const CATEGORY_HEX: Record<TaxaGroupKey, string> = {
 
 const categories = TAXA_GROUP_KEYS;
 
-/** Map a speciesMap entry to the same high-level group used by the Dashboard. */
+/** Map a scientific name to the same high-level group used by the Dashboard. */
 function getSpeciesGroup(scientific_name: string, iconicTaxon: string): TaxaGroupKey {
   return getTaxaGroup({
     observed_on: "",
@@ -51,15 +51,15 @@ function getSpeciesGroup(scientific_name: string, iconicTaxon: string): TaxaGrou
 
 const HEBREW_LETTER_REGEX = /[א-ת]/;
 
-function getSpeciesLabel(entry: SpeciesInfo, lang: "he" | "en"): string {
+function getSpeciesLabel(entry: MasterSpeciesEntry, lang: "he" | "en"): string {
   if (lang === "he") {
-    if (entry.Hebrew_Name && entry.Hebrew_Name !== "N/A" && HEBREW_LETTER_REGEX.test(entry.Hebrew_Name)) {
-      return entry.Hebrew_Name;
+    if (entry.hebrew_name && entry.hebrew_name !== "N/A" && HEBREW_LETTER_REGEX.test(entry.hebrew_name)) {
+      return entry.hebrew_name;
     }
-    return entry.Scientific_Name;
+    return entry.scientific_name;
   }
-  if (entry.English_Name && entry.English_Name !== "N/A") return entry.English_Name;
-  return entry.Scientific_Name;
+  if (entry.english_name && entry.english_name !== "N/A") return entry.english_name;
+  return entry.scientific_name;
 }
 
 export function SpeciesDeepDive() {
@@ -75,9 +75,9 @@ export function SpeciesDeepDive() {
     }
   }, [category, setDeepDiveCategory]);
 
-  // Group every speciesMap entry into the same 5 dashboard categories based on our dictionary
+  // Group every identified (non-generic) master-species entry into dashboard categories
   const groupedSpecies = useMemo(() => {
-    const grouped: Record<TaxaGroupKey, SpeciesInfo[]> = {
+    const grouped: Record<TaxaGroupKey, MasterSpeciesEntry[]> = {
       birds: [],
       butterflies: [],
       dragonflies: [],
@@ -87,7 +87,7 @@ export function SpeciesDeepDive() {
       other: [],
     };
 
-    // Map dictionary categories to Dashboard TaxaGroupKeys
+    // Map canonical categories to Dashboard TaxaGroupKeys
     const categoryMapping: Record<string, TaxaGroupKey> = {
       "עופות": "birds",
       "יונקים": "mammals",
@@ -95,18 +95,17 @@ export function SpeciesDeepDive() {
       "שפיראים": "dragonflies",
       "פורקי רגליים": "arthropods",
       "צמחים": "plants",
-      "חרקים אחרים": "arthropods",
       "שאר המינים": "other"
     };
 
-    // speciesMap is now a flat array, so we iterate correctly
-    for (const entry of speciesMap) {
-      const group = categoryMapping[entry.Category] || "other";
+    for (const entry of masterSpeciesMap) {
+      if (entry.isGeneric) continue;
+      const group = categoryMapping[entry.canonical_category] || "other";
       grouped[group].push(entry);
     }
 
     for (const group of categories) {
-      grouped[group].sort((a, b) => a.Scientific_Name.localeCompare(b.Scientific_Name));
+      grouped[group].sort((a, b) => a.scientific_name.localeCompare(b.scientific_name));
     }
     return grouped;
   }, []);
@@ -119,9 +118,9 @@ export function SpeciesDeepDive() {
     const q = search.trim().toLowerCase();
     return all.filter(
       (sp) =>
-        sp.Scientific_Name.toLowerCase().includes(q) ||
-        (sp.Hebrew_Name !== "N/A" && sp.Hebrew_Name.toLowerCase().includes(q)) ||
-        (sp.English_Name !== "N/A" && sp.English_Name.toLowerCase().includes(q))
+        sp.scientific_name.toLowerCase().includes(q) ||
+        (sp.hebrew_name !== "N/A" && sp.hebrew_name.toLowerCase().includes(q)) ||
+        (sp.english_name !== "N/A" && sp.english_name.toLowerCase().includes(q))
     );
   }, [category, search, groupedSpecies]);
 
@@ -241,13 +240,13 @@ export function SpeciesDeepDive() {
             </button>
 
             {speciesList.map((sp) => {
-              const isSelected = species.has(sp.Scientific_Name);
+              const isSelected = species.has(sp.scientific_name);
               return (
                 <button
-                  key={sp.Scientific_Name}
+                  key={sp.scientific_name}
                   type="button"
-                  onClick={() => toggleDeepDiveSpecies(sp.Scientific_Name)}
-                  title={sp.Scientific_Name}
+                  onClick={() => toggleDeepDiveSpecies(sp.scientific_name)}
+                  title={sp.scientific_name}
                   className={`shrink-0 inline-flex items-center rounded-full border px-2.5 py-1 text-xs transition-all duration-200 whitespace-nowrap ${
                     isSelected ? activeColors.active : activeColors.inactive
                   }`}
