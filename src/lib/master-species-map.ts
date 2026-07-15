@@ -1,5 +1,5 @@
 /**
- * Master species map generated from public/Tzipori_2325.csv.
+ * Master species map generated from public/Tzipori_2325.csv and enriched from species_master_list.csv.
  *
  * This is the single source of truth used by taxonomy-engine.ts.
  * Each entry maps a scientific_name to its canonical Hebrew category and display names.
@@ -1286,7 +1286,6 @@ export const masterSpeciesMap: MasterSpeciesEntry[] = [
   m({ scientific_name: "Ziziphora capitata", canonical_category: "צמחים", hebrew_name: "׳׳‘׳•׳‘׳™׳× ׳׳§׳•׳¨׳§׳₪׳×", english_name: "", isGeneric: false }),
   m({ scientific_name: "Zoropsis lutea", canonical_category: "פורקי רגליים", hebrew_name: "", english_name: "", isGeneric: false }),
   m({ scientific_name: "Zygaena graslini", canonical_category: "שאר המינים", hebrew_name: "ססמבריק אדמוני", english_name: "", isGeneric: false }),
-  m({ scientific_name: "", canonical_category: "שאר המינים", hebrew_name: "", english_name: "", isGeneric: true }),
   m({ scientific_name: "Ablattaria", canonical_category: "פורקי רגליים", hebrew_name: "", english_name: "", isGeneric: true }),
   m({ scientific_name: "Acalyptratae", canonical_category: "פורקי רגליים", hebrew_name: "", english_name: "", isGeneric: true }),
   m({ scientific_name: "Acanthaclisini", canonical_category: "פורקי רגליים", hebrew_name: "", english_name: "", isGeneric: true }),
