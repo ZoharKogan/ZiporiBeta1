@@ -150,6 +150,24 @@ export function SpeciesDeepDive() {
     return { rows: deepDiveFiltered.length, observers: observers.size, species: speciesSet.size };
   }, [deepDiveFiltered]);
 
+  // Dynamic observation counts per category from the loaded CSV data
+  const categoryObservationCounts = useMemo(() => {
+    const counts: Record<TaxaGroupKey, number> = {
+      birds: 0,
+      butterflies: 0,
+      dragonflies: 0,
+      arthropods: 0,
+      mammals: 0,
+      plants: 0,
+      other: 0,
+    };
+    for (const o of observations) {
+      const group = getTaxaGroup(o);
+      counts[group] = (counts[group] || 0) + 1;
+    }
+    return counts;
+  }, [observations]);
+
   const activeCategory = category as TaxaGroupKey | null;
   const activeColors = activeCategory ? (CATEGORY_COLORS[activeCategory] || DEFAULT_COLOR) : DEFAULT_COLOR;
 
@@ -185,7 +203,7 @@ export function SpeciesDeepDive() {
                 }`}
               >
                 {t(`tg_${cat}`)}
-                <span className="opacity-60 text-[10px]">({(groupedSpecies[cat] || []).length})</span>
+                <span className="opacity-60 text-[10px]">({categoryObservationCounts[cat].toLocaleString()})</span>
               </button>
             );
           })}
