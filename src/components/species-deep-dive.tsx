@@ -2,6 +2,7 @@ import { useEffect, useMemo } from "react";
 import { useObservations, getTaxaGroup, TAXA_GROUP_KEYS, type TaxaGroupKey } from "@/lib/observations-store";
 import { useI18n } from "@/lib/i18n";
 import { speciesMap, type SpeciesInfo } from "@/lib/species-map";
+import { getTaxonDetails } from "@/lib/taxonomy-engine";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ObservationMap } from "@/components/observation-map";
@@ -94,7 +95,7 @@ export function SpeciesDeepDive() {
       "שפיראים": "dragonflies",
       "פורקי רגליים": "arthropods",
       "צמחים": "plants",
-      "חרקים אחרים": "other",
+      "חרקים אחרים": "arthropods",
       "שאר המינים": "other"
     };
 
@@ -140,7 +141,11 @@ export function SpeciesDeepDive() {
     const speciesSet = new Set<string>();
     for (const o of deepDiveFiltered) {
       if (o.user_login) observers.add(o.user_login);
-      if (o.scientific_name) speciesSet.add(o.scientific_name);
+      const details = getTaxonDetails(o.scientific_name, o.iconic_taxon_name, o.common_name);
+      // Keep generic/unidentified observations in total rows, but don't count them as unique species
+      if (o.scientific_name && !details.isGeneric) {
+        speciesSet.add(o.scientific_name);
+      }
     }
     return { rows: deepDiveFiltered.length, observers: observers.size, species: speciesSet.size };
   }, [deepDiveFiltered]);

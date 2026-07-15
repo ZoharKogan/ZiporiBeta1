@@ -14,6 +14,7 @@ export type Observation = {
   quality_grade: string;
   iconic_taxon_name: string;
   scientific_name: string;
+  common_name?: string;
   taxon_order_name: string;
   user_category: string;
   establishment_means?: string;
@@ -158,9 +159,9 @@ const _rareSciMap = new Map<string, TaxaGroupKey>(
 export function getTaxaGroup(o: Observation): TaxaGroupKey {
   const sci = o.scientific_name;
 
-  // 1. Taxonomy engine lookup
+  // 1. Taxonomy engine lookup (uses iconic_taxon_name + common_name for fallbacks)
   if (sci) {
-    const category = getTaxonCategory(sci);
+    const category = getTaxonCategory(sci, o.iconic_taxon_name, o.common_name);
     if (category !== "שאר המינים") {
       return TAB_LABEL_TO_GROUP[category] ?? "other";
     }
@@ -337,6 +338,7 @@ export function ObservationsProvider({ children }: { children: ReactNode }) {
               quality_grade: (row.quality_grade || "").trim().toLowerCase(),
               iconic_taxon_name: (row.iconic_taxon_name || "").trim(),
               scientific_name: (row.scientific_name || "").trim(),
+              common_name: (row.common_name || "").trim() || undefined,
               taxon_order_name: (row.taxon_order_name || "").trim(),
               user_category: userCategory,
               establishment_means: (row.establishment_means || "").trim().toLowerCase() || undefined,
