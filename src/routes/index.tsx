@@ -118,7 +118,7 @@ function Index() {
 
 function ResetFiltersButton() {
   const { t } = useI18n();
-  const { observations, filters, setFilters, datasetBounds } = useObservations();
+  const { observations, filters, setFilters, datasetBounds, deepDiveActions } = useObservations();
 
   const uniqueYears = useMemo(() => {
     const years = new Set<string>();
@@ -137,10 +137,11 @@ function ResetFiltersButton() {
     const groupsInData = new Set<string>(
       observations.map((o) => o.user_category).filter(Boolean)
     );
-    groupsInData.add("\u05e0\u05d9\u05d8\u05d5\u05e8 \u05de\u05e7\u05e6\u05d5\u05e2\u05d9");
+    groupsInData.add("expert");
+    deepDiveActions.setDeepDiveCategory(null);
     setFilters({
       time: defaultTime,
-      taxa: new Set(["birds", "butterflies", "dragonflies", "arthropods", "mammals", "plants", "other"] as const),
+      taxa: new Set(["mammals", "birds", "butterflies", "dragonflies", "arthropods", "plants", "other"] as const),
       groups: groupsInData,
       researchOnly: false,
       areas: new Set(SURVEY_AREA_KEYS),

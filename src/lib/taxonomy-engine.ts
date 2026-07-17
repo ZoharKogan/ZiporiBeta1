@@ -2,7 +2,7 @@
  * taxonomy-engine.ts — Single Source of Truth for species taxonomy.
  *
  * Reads from:
- *   - master-species-map.ts (generated from the full CSV dataset)
+ *   - species-map.ts (curated 1,977-entry dictionary)
  *   - species-registry.ts    (invasive | rare | other classification)
  *
  * Public API:
@@ -11,16 +11,16 @@
  *   getTaxonStatus(scientificName)   → SpeciesStatus
  */
 
-import { masterSpeciesMap, type MasterSpeciesEntry } from "./master-species-map";
+import { speciesMap, type SpeciesInfo } from "./species-map";
 import { classifySpecies, type SpeciesStatus } from "./species-registry";
 
 // ─── Canonical category keys (Hebrew labels used throughout the app) ──────────
 export const CANONICAL_CATEGORIES = [
-  "עופות",
   "יונקים",
+  "עופות",
   "פרפרים",
   "שפיראים",
-  "פורקי רגליים",
+  "פרוקי רגליים",
   "צמחים",
   "שאר המינים",
 ] as const;
@@ -41,9 +41,11 @@ export type TaxonDetails = {
   isGeneric: boolean;
 };
 
-// ─── Build fast lookup map from master species map ────────────────────────────
-const _byScientificName = new Map<string, MasterSpeciesEntry>(
-  masterSpeciesMap.map((e) => [e.scientific_name.trim().toLowerCase(), e])
+export type { SpeciesInfo };
+
+// ─── Build fast lookup map from unified species map ─────────────────────────
+const _byScientificName = new Map<string, SpeciesInfo>(
+  speciesMap.map((e) => [e.Scientific_Name.trim().toLowerCase(), e])
 );
 
 function normalizeCategory(raw: string | undefined): CanonicalCategory {
@@ -82,11 +84,11 @@ export function getTaxonDetails(
   }
 
   return {
-    name: entry.hebrew_name && entry.hebrew_name !== "N/A" ? entry.hebrew_name : entry.scientific_name,
-    englishName: entry.english_name && entry.english_name !== "N/A" ? entry.english_name : "",
-    category: normalizeCategory(entry.canonical_category),
+    name: entry.Hebrew_Name && entry.Hebrew_Name !== "N/A" ? entry.Hebrew_Name : entry.Scientific_Name,
+    englishName: entry.English_Name && entry.English_Name !== "N/A" ? entry.English_Name : "",
+    category: normalizeCategory(entry.Category),
     status,
-    isGeneric: entry.isGeneric,
+    isGeneric: entry.isGeneric ?? false,
   };
 }
 

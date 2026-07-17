@@ -53,17 +53,17 @@ export function MetricsTable({
     // Build a lookup of observations per raw user_category key from filtered data
     const grouped = new Map<string, Observation[]>();
     for (const o of data) {
-      const category = o.user_category || "ציבור רחב";
+      const category = o.user_category || "קהילות מקוונות";
       if (!grouped.has(category)) grouped.set(category, []);
       grouped.get(category)!.push(o);
     }
 
     // Fixed canonical group list — rows always present regardless of data
     const CANONICAL_GROUPS: { raw: string; matchKeys: string[] }[] = [
-      { raw: "ניטור מקצועי", matchKeys: ["ניטור מקצועי", "experts"] },
+      { raw: "expert", matchKeys: ["expert"] },
       { raw: "קהילה",        matchKeys: ["קהילה", "community"] },
       { raw: "תלמידים",      matchKeys: ["תלמידים", "סטודנטים", "student"] },
-      { raw: "ציבור רחב",    matchKeys: ["ציבור רחב"] },
+      { raw: "קהילות מקוונות",    matchKeys: ["קהילות מקוונות"] },
     ];
 
     return CANONICAL_GROUPS.map(({ raw, matchKeys }) => {
@@ -105,7 +105,7 @@ export function MetricsTable({
                 <td className="px-2 py-1 text-center tabular-nums text-xs">{r.observations.toLocaleString()}</td>
                 <td className="px-2 py-1 text-center tabular-nums text-xs">{r.monitoringRate.toFixed(1)}</td>
                 <td className="px-2 py-1 text-center tabular-nums text-xs">
-                  {r.rawGroup === "ניטור מקצועי" || r.rawGroup === "experts" ? (
+                  {r.rawGroup === "expert" ? (
                     <span className="text-muted-foreground">-</span>
                   ) : (
                     <span className="rounded bg-emerald-soft px-1.5 py-0.5 text-[color:var(--accent-foreground)] text-[10px]">

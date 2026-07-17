@@ -34,7 +34,7 @@ function PaneSetup() {
   return null;
 }
 
-export function ObservationMap({ data }: { data: Observation[] }) {
+export function ObservationMap({ data, selectedSpecies = new Set<string>() }: { data: Observation[]; selectedSpecies?: Set<string> }) {
   const { filters } = useObservations();
   const selectedAreas = new Set(filters.areas) as Set<SurveyAreaKey>;
   const baseAreaKeys = SURVEY_AREA_KEYS.filter((k) => k !== "other_areas");
@@ -160,6 +160,7 @@ export function ObservationMap({ data }: { data: Observation[] }) {
         })}
         {bubbles.map((bubble, i) => {
           const colors = getCategoryColor(bubble.category);
+          const isSelected = selectedSpecies.size === 0 || selectedSpecies.has(bubble.raw_observations[0]?.species);
           return (
             <CircleMarker
               key={i}
@@ -168,8 +169,9 @@ export function ObservationMap({ data }: { data: Observation[] }) {
               pathOptions={{
                 color: colors.color,
                 fillColor: colors.fillColor,
-                fillOpacity: 0.6,
-                weight: 1,
+                fillOpacity: isSelected ? 0.6 : 0.15,
+                weight: isSelected ? 2 : 1,
+                opacity: isSelected ? 1 : 0.3,
               }}
               interactive={false}
             />

@@ -43,7 +43,7 @@ export function FilterSidebar() {
   const { t, lang } = useI18n();
   const { observations, filters, setFilters, toggleSpeciesType, datasetBounds } = useObservations();
 
-  // Derive unique user categories from observations, always including "ניטור מקצועי"
+  // Derive unique user categories from observations, always including the canonical expert key
   const uniqueUserCategories = useMemo(() => {
     const categories = new Set<string>();
     for (const obs of observations) {
@@ -51,9 +51,9 @@ export function FilterSidebar() {
         categories.add(obs.user_category);
       }
     }
-    categories.add("ניטור מקצועי"); // Always show Professional Monitoring even if no data yet
+    categories.add("expert"); // Always show Professional Monitoring even if no data yet
     // Fixed display order
-    const order = ["ניטור מקצועי", "experts", "קהילה", "community", "תלמידים", "סטודנטים", "student", "ציבור רחב"];
+    const order = ["expert", "קהילה", "community", "תלמידים", "סטודנטים", "student", "קהילות מקוונות"];
     return Array.from(categories).sort((a, b) => {
       const ai = order.findIndex((k) => a.includes(k));
       const bi = order.findIndex((k) => b.includes(k));
