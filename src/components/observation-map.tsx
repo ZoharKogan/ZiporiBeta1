@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from "react";
-import { MapContainer, TileLayer, CircleMarker, Polygon, useMap } from "react-leaflet";
+import { useEffect, useMemo, useState } from "react";
+import { MapContainer, TileLayer, CircleMarker, Polygon, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import type { Observation } from "@/lib/observations-store";
 import { useObservations, translateSpeciesName, getTaxaGroup } from "@/lib/observations-store";
@@ -15,11 +15,30 @@ function FitBounds({ obs }: { obs: Observation[] }) {
   return null;
 }
 
-export function ObservationMap({ data }: { data: Observation[] }) {
+function ZoomTracker({ onZoom }: { onZoom: (z: number) => void }) {
+  useMapEvents({
+    zoomend: (e) => onZoom(e.target.getZoom()),
+  });
+  return null;
+}
+
+function PaneSetup() {
+  const map = useMap();
+  useEffect(() => {
+    if (!map.getPane("polygonPane")) {
+      const pane = map.createPane("polygonPane");
+      pane.style.zIndex = "500";
+      pane.style.pointerEvents = "none";
+    }
+  }, [map]);
+  return null;
+}
+
+export function ObservationMap({ data, selectedSpecies = new Set<string>() }: { data: Observation[]; selectedSpecies?: Set<string> }) {
   const { filters } = useObservations();
   const selectedAreas = new Set(filters.areas) as Set<SurveyAreaKey>;
-  const hasOtherAreas = selectedAreas.has("other_areas");
   const baseAreaKeys = SURVEY_AREA_KEYS.filter((k) => k !== "other_areas");
+  const [zoom, setZoom] = useState<number>(7);
 
   const center: [number, number] = data[0]
     ? [data[0].latitude, data[0].longitude]
@@ -83,11 +102,13 @@ export function ObservationMap({ data }: { data: Observation[] }) {
 
   // Color palette matching taxa tabs (soft/pastel colors)
   const categoryColors: Record<string, { color: string; fillColor: string }> = {
-    birds: { color: "#0ea5e9", fillColor: "#7dd3fc" },      // sky-500, sky-300
+    birds: { color: "#0ea5e9", fillColor: "#7dd3fc" },        // sky-500, sky-300
     butterflies: { color: "#f97316", fillColor: "#fdba74" },  // orange-500, orange-300
-    dragonflies: { color: "#14b8a6", fillColor: "#5eead4" }, // teal-500, teal-300
-    mammals: { color: "#a855f7", fillColor: "#d8b4fe" },    // purple-500, purple-300
-    other: { color: "#6b7280", fillColor: "#d4d4d8" },       // gray-500, gray-300
+    dragonflies: { color: "#14b8a6", fillColor: "#5eead4" },  // teal-500, teal-300
+    arthropods: { color: "#dc2626", fillColor: "#fca5a5" },   // red-600, red-300
+    mammals: { color: "#a855f7", fillColor: "#d8b4fe" },      // purple-500, purple-300
+    plants: { color: "#65a30d", fillColor: "#bef264" },       // lime-600, lime-300
+    other: { color: "#6b7280", fillColor: "#d4d4d8" },        // gray-500, gray-300
   };
 
   const getCategoryColor = (category: string) => {
@@ -111,31 +132,35 @@ export function ObservationMap({ data }: { data: Observation[] }) {
           attribution='&copy; OpenStreetMap'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <PaneSetup />
         <FitBounds obs={data} />
+        <ZoomTracker onZoom={setZoom} />
         {baseAreaKeys.map((areaKey) => {
           const rings = SURVEY_POLYGONS[areaKey];
           if (!rings) return null;
           const isSelected = selectedAreas.has(areaKey);
-          if (!isSelected && !hasOtherAreas) return null;
-          const color = isSelected ? AREA_COLORS[areaKey] : "#4b5563";
+          if (!isSelected) return null;
+          const zoomedOut = zoom <= 13;
+          const pathOptions = {
+            color: AREA_COLORS[areaKey],
+            fillColor: AREA_COLORS[areaKey],
+            fillOpacity: zoomedOut ? 0.6 : 0.35,
+            weight: zoomedOut ? 11 : 4,
+            opacity: 1,
+            interactive: false,
+          };
           return (
             <Polygon
               key={areaKey}
               positions={rings.map(ringToLatLng)}
-              pathOptions={{
-                color,
-                fillColor: isSelected ? AREA_COLORS[areaKey] : "#9ca3af",
-                fillOpacity: isSelected ? 0.2 : 0.15,
-                weight: isSelected ? 2 : 4,
-                opacity: 0.8,
-                dashArray: isSelected ? undefined : "10, 10",
-                interactive: false,
-              }}
+              pathOptions={pathOptions}
+              pane="polygonPane"
             />
           );
         })}
         {bubbles.map((bubble, i) => {
           const colors = getCategoryColor(bubble.category);
+          const isSelected = selectedSpecies.size === 0 || selectedSpecies.has(bubble.raw_observations[0]?.species);
           return (
             <CircleMarker
               key={i}
@@ -144,8 +169,9 @@ export function ObservationMap({ data }: { data: Observation[] }) {
               pathOptions={{
                 color: colors.color,
                 fillColor: colors.fillColor,
-                fillOpacity: 0.6,
-                weight: 1,
+                fillOpacity: isSelected ? 0.6 : 0.15,
+                weight: isSelected ? 2 : 1,
+                opacity: isSelected ? 1 : 0.3,
               }}
               interactive={false}
             />

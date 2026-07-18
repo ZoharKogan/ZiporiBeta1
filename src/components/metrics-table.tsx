@@ -50,32 +50,35 @@ export function MetricsTable({
   const { t, lang } = useI18n();
 
   const rows = useMemo(() => {
+    // Build a lookup of observations per raw user_category key from filtered data
     const grouped = new Map<string, Observation[]>();
     for (const o of data) {
-      const category = o.user_category || "ציבור רחב";
-      if (!grouped.has(category)) {
-        grouped.set(category, []);
-      }
+      const category = o.user_category || "קהילות מקוונות";
+      if (!grouped.has(category)) grouped.set(category, []);
       grouped.get(category)!.push(o);
     }
 
-    // Ensure "מומחים" always has a row
-    if (!grouped.has("מומחים") && !grouped.has("experts")) {
-      grouped.set("מומחים", []);
-    }
+    // Fixed canonical group list — rows always present regardless of data
+    const CANONICAL_GROUPS: { raw: string; matchKeys: string[] }[] = [
+      { raw: "expert", matchKeys: ["expert"] },
+      { raw: "קהילה",        matchKeys: ["קהילה", "community"] },
+      { raw: "תלמידים",      matchKeys: ["תלמידים", "סטודנטים", "student"] },
+      { raw: "קהילות מקוונות",    matchKeys: ["קהילות מקוונות"] },
+    ];
 
-    // Force specific order: Community -> Experts -> Students -> General Public
-    const order = ["קהילה", "community", "מומחים", "experts", "תלמידים", "סטודנטים", "student", "ציבור רחב"];
-    const sortedEntries = Array.from(grouped.entries()).sort((a, b) => {
-      const aIndex = order.findIndex(key => a[0].includes(key)) ?? 999;
-      const bIndex = order.findIndex(key => b[0].includes(key)) ?? 999;
-      return aIndex - bIndex;
+    return CANONICAL_GROUPS.map(({ raw, matchKeys }) => {
+      // Collect observations for all matching raw keys
+      const obs: Observation[] = [];
+      for (const key of matchKeys) {
+        const bucket = grouped.get(key);
+        if (bucket) obs.push(...bucket);
+      }
+      return {
+        group: translateGroupName(raw, lang),
+        rawGroup: raw,
+        ...computeRow(obs),
+      };
     });
-
-    return sortedEntries.map(([group, observations]) => ({
-      group: translateGroupName(group, lang),
-      ...computeRow(observations),
-    }));
   }, [data, lang]);
 
   return (
@@ -102,9 +105,13 @@ export function MetricsTable({
                 <td className="px-2 py-1 text-center tabular-nums text-xs">{r.observations.toLocaleString()}</td>
                 <td className="px-2 py-1 text-center tabular-nums text-xs">{r.monitoringRate.toFixed(1)}</td>
                 <td className="px-2 py-1 text-center tabular-nums text-xs">
-                  <span className="rounded bg-emerald-soft px-1.5 py-0.5 text-[color:var(--accent-foreground)] text-[10px]">
-                    {r.qualityPct.toFixed(1)}%
-                  </span>
+                  {r.rawGroup === "expert" ? (
+                    <span className="text-muted-foreground">-</span>
+                  ) : (
+                    <span className="rounded bg-emerald-soft px-1.5 py-0.5 text-[color:var(--accent-foreground)] text-[10px]">
+                      {r.qualityPct.toFixed(1)}%
+                    </span>
+                  )}
                 </td>
                 <td className="px-2 py-1 text-center tabular-nums text-xs">{r.distinctSpecies.toLocaleString()}</td>
                 <td className="px-2 py-1 text-center tabular-nums text-xs">{r.invasiveSpecies.toLocaleString()}</td>

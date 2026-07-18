@@ -8,10 +8,13 @@ import { translateMonth, translateGroupName } from "@/lib/observations-store";
 import type { Observation } from "@/lib/observations-store";
 
 // ─── Grayscale palette & marker config ────────────────────────────────────────
+const PROFESSIONAL_MONITORING_KEY = "expert";
+
 const GROUP_CONFIG = [
-  { key: "community",   color: "#000000", shape: "circle"   as const },
-  { key: "student",     color: "#4A4A4A", shape: "cross"    as const },
-  { key: "ציבור רחב",  color: "#B0B0B0", shape: "triangle" as const },
+  { key: PROFESSIONAL_MONITORING_KEY, color: "#6366F1", shape: "diamond"  as const },
+  { key: "community",              color: "#000000", shape: "circle"   as const },
+  { key: "student",                color: "#4A4A4A", shape: "cross"    as const },
+  { key: "קהילות מקוונות",             color: "#B0B0B0", shape: "triangle" as const },
 ] as const;
 
 // Canonical raw-key order for deterministic slot assignment
@@ -46,10 +49,17 @@ function TriangleDot(props: { cx?: number; cy?: number; stroke?: string }) {
   return <polygon points={points} stroke={stroke} strokeWidth={1.5} fill={stroke} />;
 }
 
-const DOT_RENDERERS = [CircleDot, CrossDot, TriangleDot] as const;
+function DiamondDot(props: { cx?: number; cy?: number; stroke?: string }) {
+  const { cx = 0, cy = 0, stroke } = props;
+  const s = 5;
+  const points = `${cx},${cy - s} ${cx + s},${cy} ${cx},${cy + s} ${cx - s},${cy}`;
+  return <polygon points={points} stroke={stroke} strokeWidth={1.5} fill={stroke} />;
+}
+
+const DOT_RENDERERS = [CircleDot, CrossDot, TriangleDot, DiamondDot] as const;
 
 // ─── Custom legend renderer ────────────────────────────────────────────────────
-const LEGEND_SYMBOLS = ["●", "×", "▲"] as const;
+const LEGEND_SYMBOLS = ["●", "×", "▲", "◆"] as const;
 
 function CustomLegend({ groups, lang }: { groups: string[]; lang: "he" | "en" }) {
   return (
@@ -101,7 +111,7 @@ export function TimeSeriesChart({ data }: { data: Observation[] }) {
       const sortKey = yearFull * 100 + monthNum;
       const yearShort = parts[2].slice(-2);
       const label = `${translateMonth(monthNum, lang)}-${yearShort}`;
-      const group = o.user_category || "ציבור רחב";
+      const group = o.user_category || "קהילות מקוונות";
 
       allGroups.add(group);
 
@@ -111,6 +121,9 @@ export function TimeSeriesChart({ data }: { data: Observation[] }) {
       const entry = rawCounts.get(sortKey)!;
       entry.counts.set(group, (entry.counts.get(group) ?? 0) + 1);
     }
+
+    // Always include Professional Monitoring so it renders even with no data
+    allGroups.add(PROFESSIONAL_MONITORING_KEY);
 
     const allSortKeys = Array.from(rawCounts.keys()).sort((a, b) => a - b);
     return { rawCounts, allSortKeys, allGroups: Array.from(allGroups) };

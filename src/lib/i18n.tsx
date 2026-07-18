@@ -18,10 +18,12 @@ const dict: Dict = {
   months: { he: "חודשים", en: "Months" },
   taxa: { he: "טקסונים", en: "Taxa" },
   quality: { he: "איכות", en: "Quality" },
+  tg_mammals: { he: "יונקים", en: "Mammals" },
   tg_birds: { he: "עופות", en: "Birds" },
   tg_butterflies: { he: "פרפרים", en: "Butterflies" },
   tg_dragonflies: { he: "שפיראים", en: "Dragonflies" },
-  tg_mammals: { he: "יונקים", en: "Mammals" },
+  tg_arthropods: { he: "פרוקי רגליים", en: "Arthropods" },
+  tg_plants: { he: "צמחים", en: "Plants" },
   tg_other: { he: "שאר המינים", en: "Other Species" },
   researchOnly: { he: "דרגת מחקר", en: "Research Grade" },
   targetPop: { he: "אוכלוסיית יעד", en: "Target Population" },
@@ -59,7 +61,7 @@ const dict: Dict = {
   qualityGrade: { he: "דרגת איכות", en: "Quality Grade" },
   general_public: { he: "קהל רחב", en: "General Public" },
   community: { he: "קהילה", en: "Community" },
-  experts: { he: "מומחים", en: "Experts" },
+  expert: { he: "ניטור מקצועי", en: "Professional Monitoring" },
   students: { he: "תלמידים", en: "Students" },
   professionals: { he: "אנשי מקצוע", en: "Professionals" },
   loading: { he: "טוען…", en: "Loading…" },
@@ -67,6 +69,7 @@ const dict: Dict = {
   totalRows: { he: "סך תצפיות מסוננות", en: "Filtered observations" },
   uniqueObservers: { he: "סה״כ מנטרים", en: "Total Monitors" },
   uniqueSpecies: { he: "סה״כ מינים", en: "Total Species" },
+  unidentified: { he: "לא מזוהה", en: "Unidentified" },
   speciesType: { he: "סוג מין", en: "Species Type" },
   otherSpecies: { he: "שאר המינים", en: "Other Species" },
   areas: { he: "אזורים", en: "Areas" },
@@ -80,7 +83,7 @@ const dict: Dict = {
 const groupKeyMap: Record<string, keyof typeof dict> = {
   "General Public": "general_public",
   Community: "community",
-  Experts: "experts",
+  "Professional Monitoring": "expert",
   Students: "students",
   Professionals: "professionals",
 };
@@ -131,4 +134,4 @@ export function useI18n() {
   return c;
 }
 
-export const USER_GROUPS = ["General Public", "Community", "Experts", "Students", "Professionals"] as const;
+export const USER_GROUPS = ["General Public", "Community", "Professional Monitoring", "Students", "Professionals"] as const;

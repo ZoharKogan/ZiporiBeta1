@@ -1,9 +1,9 @@
 import { createContext, useContext, useEffect, useMemo, useState, useCallback, type ReactNode } from "react";
 import Papa from "papaparse";
 import type { SurveyAreaKey } from "./survey-polygons";
+import { SURVEY_AREA_KEYS } from "./survey-polygons";
 import { getSpeciesHebrewName } from "./species-dictionary";
-import { speciesMap } from "@/lib/species-map";
-import { classifySpecies } from "./species-registry";
+import { getTaxonCategory, getTaxonStatus } from "./taxonomy-engine";
 export type { SurveyAreaKey };
 
 export type Observation = {
@@ -14,6 +14,7 @@ export type Observation = {
   quality_grade: string;
   iconic_taxon_name: string;
   scientific_name: string;
+  common_name?: string;
   taxon_order_name: string;
   user_category: string;
   establishment_means?: string;
@@ -21,14 +22,13 @@ export type Observation = {
 
 // Group name translations (Hebrew -> English for language toggle)
 const GROUP_TRANSLATIONS: Record<string, { he: string; en: string }> = {
-  "ציבור רחב": { he: "ציבור רחב", en: "General Public" },
+  "קהילות מקוונות": { he: "קהילות מקוונות", en: "General Public" },
   "תלמידים": { he: "תלמידים", en: "Students" },
   "סטודנטים": { he: "תלמידים", en: "Students" },
-  "קהילה": { he: "קהילת המדע האזרחי", en: "Citizen science community" },
+  "קהילה": { he: "קהילות מקומיות", en: "Citizen science community" },
   "student": { he: "תלמידים", en: "Students" },
-  "community": { he: "קהילת המדע האזרחי", en: "Citizen science community" },
-  "מומחים": { he: "מומחים", en: "Experts" },
-  "experts": { he: "מומחים", en: "Experts" },
+  "community": { he: "קהילות מקומיות", en: "Citizen science community" },
+  "expert": { he: "ניטור מקצועי", en: "Professional Monitoring" },
   "professional": { he: "אנשי מקצוע", en: "Professionals" },
 };
 
@@ -48,10 +48,12 @@ const SPECIES_TRANSLATIONS: Record<string, string> = {
 
 // Taxa translations (Hebrew -> English for language toggle)
 const TAXA_TRANSLATIONS: Record<string, { he: string; en: string }> = {
+  "יונקים": { he: "יונקים", en: "Mammals" },
   "עופות": { he: "עופות", en: "Birds" },
   "פרפרים": { he: "פרפרים", en: "Butterflies" },
   "שפיראים": { he: "שפיראים", en: "Dragonflies" },
-  "יונקים": { he: "יונקים", en: "Mammals" },
+  "פרוקי רגליים": { he: "פרוקי רגליים", en: "Arthropods" },
+  "צמחים": { he: "צמחים", en: "Plants" },
   "שאר המינים": { he: "שאר המינים", en: "Other Species" },
 };
 
@@ -100,11 +102,95 @@ export function translateMonth(monthNum: number, lang: "he" | "en" = "he"): stri
   return monthNum.toString();
 }
 
+/**
+ * Parse observation dates from either:
+ * - Tzipori format: DD/MM/YYYY or DD/MM/YYYY HH:mm
+ * - Merlin format: M/D/YYYY or M/D/YYYY H:mm
+ * Normalizes to DD/MM/YYYY (the internal format used by the rest of the app).
+ * Returns empty string if unparseable.
+ */
+function parseObservedOn(value: string): string {
+  const raw = (value || "").trim();
+  if (!raw) return "";
+
+  // Strip time portion if present
+  const datePart = raw.split(/\s+/)[0];
+  const parts = datePart.split("/");
+  if (parts.length !== 3) return "";
+
+  const first = parseInt(parts[0], 10);
+  const second = parseInt(parts[1], 10);
+  const year = parseInt(parts[2], 10);
+  if (isNaN(first) || isNaN(second) || isNaN(year)) return "";
+
+  let day: number;
+  let month: number;
+
+  if (second > 12) {
+    // Second component cannot be a month: must be Merlin M/D/YYYY
+    month = first;
+    day = second;
+  } else if (first > 12) {
+    // First component cannot be a month: must be Tzipori DD/MM/YYYY
+    day = first;
+    month = second;
+  } else if (parts[1].length === 2 && parts[1].startsWith("0")) {
+    // Zero-padded month in second position: Tzipori DD/MM/YYYY
+    day = first;
+    month = second;
+  } else {
+    // Both components could be month/day. Merlin does not zero-pad months,
+    // so a non-padded second part is most likely Merlin's M/D/YYYY.
+    month = first;
+    day = second;
+  }
+
+  if (month < 1 || month > 12 || day < 1 || day > 31) return "";
+
+  const d = String(day).padStart(2, "0");
+  const m = String(month).padStart(2, "0");
+  return `${d}/${m}/${year}`;
+}
+
+function parseMerlinRow(row: Record<string, string>): Observation | null {
+  const lat = parseFloat((row.decimalLatitudeStart || "").trim());
+  const lon = parseFloat((row.decimalLongitudeStart || "").trim());
+  const observedOn = parseObservedOn(row.timeStamp || "");
+
+  if (!observedOn || isNaN(lat) || isNaN(lon)) return null;
+
+  const userLogin = (row.personName || row.recordedBy || "").trim();
+  if (!userLogin) return null;
+
+  const family = (row.family || "").trim();
+  let iconicTaxon = "";
+  if (["Hesperiidae", "Pieridae", "Lycaenidae", "Papilionidae", "Nymphalidae"].includes(family)) {
+    iconicTaxon = "Insecta";
+  } else if (["Canidae", "Mustelidae", "Hystricidae", "Herpestidae", "Leporidae", "Suidae"].includes(family)) {
+    iconicTaxon = "Mammalia";
+  }
+
+  return {
+    observed_on: observedOn,
+    latitude: lat,
+    longitude: lon,
+    user_login: userLogin,
+    quality_grade: "research",
+    iconic_taxon_name: iconicTaxon,
+    scientific_name: (row.scientificName || "").trim(),
+    common_name: (row.vernacularName || "").trim() || undefined,
+    taxon_order_name: family,
+    user_category: "expert",
+  };
+}
+
 export const TAXA_GROUP_KEYS = [
+  "mammals",
   "birds",
   "butterflies",
   "dragonflies",
-  "mammals",
+  "arthropods",
+  "plants",
   "other",
 ] as const;
 export type TaxaGroupKey = (typeof TAXA_GROUP_KEYS)[number];
@@ -130,10 +216,12 @@ export const RARE_SPECIES: SpecialSpeciesEntry[] = [
 
 /** Maps the Hebrew tab label used in special-species lists to the internal TaxaGroupKey. */
 const TAB_LABEL_TO_GROUP: Record<string, TaxaGroupKey> = {
+  "יונקים": "mammals",
   "עופות": "birds",
   "פרפרים": "butterflies",
   "שפיראים": "dragonflies",
-  "יונקים": "mammals",
+  "פרוקי רגליים": "arthropods",
+  "צמחים": "plants",
   "שאר המינים": "other",
 };
 
@@ -144,41 +232,40 @@ const _rareSciMap = new Map<string, TaxaGroupKey>(
   RARE_SPECIES.map((s) => [s.sci, TAB_LABEL_TO_GROUP[s.tab] ?? "other"])
 );
 
-/** Fast lookup from scientific name to its dictionary category. */
-const _speciesMapCategoryBySci = new Map<string, string>(
-  speciesMap.map((entry) => [entry.Scientific_Name, entry.Category])
-);
-
 /** Map an observation to one of our high-level dashboard groups.
- *  1. Look up the scientific_name in the global species dictionary.
+ *  1. Look up the scientific_name via the taxonomy engine (unified dictionary).
  *  2. If not found, fall back to iconic_taxon_name (Aves/Mammalia → birds/mammals).
  *  3. Default → "other".
  */
 export function getTaxaGroup(o: Observation): TaxaGroupKey {
   const sci = o.scientific_name;
 
-  // 1. Dictionary lookup
+  // 1. Taxonomy engine lookup (uses iconic_taxon_name + common_name for fallbacks)
   if (sci) {
-    const category = _speciesMapCategoryBySci.get(sci);
-    if (category) {
+    const category = getTaxonCategory(sci, o.iconic_taxon_name, o.common_name);
+    if (category !== "שאר המינים") {
       return TAB_LABEL_TO_GROUP[category] ?? "other";
     }
   }
 
-  // 2. Fallback taxonomy
+  // 2. Fallback taxonomy — strict elimination order to prevent double-counting.
+  //    Butterflies and dragonflies are checked via dictionary lookup (step 1) first;
+  //    Insecta/Arachnida only catches remaining arthropods after those are eliminated.
   const iconic = o.iconic_taxon_name;
-  if (iconic === "Aves") return "birds";
+  if (iconic === "Insecta" || iconic === "Arachnida") return "arthropods";
+  if (iconic === "Plantae") return "plants";
   if (iconic === "Mammalia") return "mammals";
+  if (iconic === "Aves") return "birds";
 
   // 3. Default
   return "other";
 }
 
-/** Classify an observation as invasive, rare, or other_species using the master registry.
+/** Classify an observation as invasive, rare, or other_species using the taxonomy engine.
  *  Any species not listed in the registry defaults to other_species.
  */
 export function getSpeciesClassification(o: Observation): string {
-  const status = classifySpecies(o.scientific_name);
+  const status = getTaxonStatus(o.scientific_name);
   return status === "other" ? "other_species" : status;
 }
 
@@ -228,11 +315,11 @@ export function ObservationsProvider({ children }: { children: ReactNode }) {
   const [observations, setObservations] = useState<Observation[]>([]);
   const [filters, setFilters] = useState<Filters>({
     time: new Map(),
-    taxa: new Set(["birds", "butterflies", "dragonflies", "mammals", "other"]),
+    taxa: new Set(["mammals", "birds", "butterflies", "dragonflies", "arthropods", "plants", "other"]),
     groups: new Set(),
     researchOnly: false,
-    areas: new Set(),
-    speciesTypes: new Set(),
+    areas: new Set<SurveyAreaKey>(SURVEY_AREA_KEYS),
+    speciesTypes: new Set(["invasive", "rare", "other_species"]),
     dateRange: null,
   });
 
@@ -313,16 +400,16 @@ export function ObservationsProvider({ children }: { children: ReactNode }) {
         }).data;
 
         // Join data: add user_category to each observation
-        const joinedObservations: Observation[] = observationsData
+        const tziporiObservations: Observation[] = observationsData
           .map((row) => {
             const lat = parseFloat((row.latitude || "").trim());
             const lon = parseFloat((row.longitude || "").trim());
-            const observedOn = (row.observed_on || "").trim();
+            const observedOn = parseObservedOn(row.observed_on || "");
 
             if (!observedOn || isNaN(lat) || isNaN(lon)) return null;
 
             const userLogin = (row.user_login || "").trim();
-            const userCategory = userGroupMap.get(userLogin) || "ציבור רחב";
+            const userCategory = userGroupMap.get(userLogin) || "קהילות מקוונות";
 
             const observation: Observation = {
               observed_on: observedOn,
@@ -332,6 +419,7 @@ export function ObservationsProvider({ children }: { children: ReactNode }) {
               quality_grade: (row.quality_grade || "").trim().toLowerCase(),
               iconic_taxon_name: (row.iconic_taxon_name || "").trim(),
               scientific_name: (row.scientific_name || "").trim(),
+              common_name: (row.common_name || "").trim() || undefined,
               taxon_order_name: (row.taxon_order_name || "").trim(),
               user_category: userCategory,
               establishment_means: (row.establishment_means || "").trim().toLowerCase() || undefined,
@@ -340,12 +428,26 @@ export function ObservationsProvider({ children }: { children: ReactNode }) {
           })
           .filter((obs): obs is Observation => obs !== null);
 
+        // Load Merlin expert observations CSV
+        const merlinResponse = await fetch("/MERLIN butterflies and mammals observations for Zohar.csv");
+        const merlinText = await merlinResponse.text();
+        const merlinData = Papa.parse<Record<string, string>>(merlinText, {
+          header: true,
+          skipEmptyLines: true,
+        }).data;
+
+        const merlinObservations: Observation[] = merlinData
+          .map(parseMerlinRow)
+          .filter((obs): obs is Observation => obs !== null);
+
+        const joinedObservations = [...tziporiObservations, ...merlinObservations];
         setObservations(joinedObservations);
 
         // Compute absolute dataset date bounds and initialise default filters
         let minTs = Infinity;
         let maxTs = -Infinity;
         const yearsInData = new Set<string>();
+        const groupsInData = new Set<string>();
         for (const obs of joinedObservations) {
           const d = obs.observed_on;
           if (!d || d.length < 10) continue;
@@ -359,6 +461,7 @@ export function ObservationsProvider({ children }: { children: ReactNode }) {
           if (ts < minTs) minTs = ts;
           if (ts > maxTs) maxTs = ts;
           yearsInData.add(parts[2]);
+          if (obs.user_category) groupsInData.add(obs.user_category);
         }
 
         if (minTs !== Infinity) {
@@ -373,10 +476,12 @@ export function ObservationsProvider({ children }: { children: ReactNode }) {
           for (const y of yearsInData) {
             defaultTime.set(y, new Set());
           }
+          groupsInData.add("expert"); // Always include Professional Monitoring
           setFilters((prev) => ({
             ...prev,
             time: defaultTime,
             dateRange: { start: boundsStart, end: boundsEnd },
+            groups: new Set(groupsInData),
           }));
         }
       } catch (error) {

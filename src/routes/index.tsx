@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { ObservationsProvider, useObservations } from "@/lib/observations-store";
+import { SURVEY_AREA_KEYS } from "@/lib/survey-polygons";
 import { useI18n } from "@/lib/i18n";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FilterSidebar } from "@/components/filter-sidebar";
@@ -117,7 +118,7 @@ function Index() {
 
 function ResetFiltersButton() {
   const { t } = useI18n();
-  const { observations, filters, setFilters, datasetBounds } = useObservations();
+  const { observations, filters, setFilters, datasetBounds, deepDiveActions } = useObservations();
 
   const uniqueYears = useMemo(() => {
     const years = new Set<string>();
@@ -133,13 +134,18 @@ function ResetFiltersButton() {
   const reset = () => {
     const defaultTime = new Map<string, Set<string>>();
     for (const y of uniqueYears) defaultTime.set(y, new Set());
+    const groupsInData = new Set<string>(
+      observations.map((o) => o.user_category).filter(Boolean)
+    );
+    groupsInData.add("expert");
+    deepDiveActions.setDeepDiveCategory(null);
     setFilters({
       time: defaultTime,
-      taxa: new Set(["birds", "butterflies", "dragonflies", "mammals", "other"] as const),
-      groups: new Set(),
+      taxa: new Set(["mammals", "birds", "butterflies", "dragonflies", "arthropods", "plants", "other"] as const),
+      groups: groupsInData,
       researchOnly: false,
-      areas: new Set(),
-      speciesTypes: new Set(),
+      areas: new Set(SURVEY_AREA_KEYS),
+      speciesTypes: new Set(["invasive", "rare", "other_species"]),
       dateRange: datasetBounds,
     });
   };
@@ -167,6 +173,7 @@ function GlobalDateRangeBar() {
         max={datasetBounds.end}
         value={[filters.dateRange.start, filters.dateRange.end]}
         onChange={([start, end]) => setDateRange(start, end)}
+        selectedYears={new Set(filters.time.keys())}
       />
     </div>
   );

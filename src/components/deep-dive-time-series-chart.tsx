@@ -6,7 +6,7 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { translateMonth, getTaxaGroup } from "@/lib/observations-store";
 import type { Observation, TaxaGroupKey } from "@/lib/observations-store";
-import { speciesMap, type SpeciesInfo } from "@/lib/species-map";
+import { SPECIES_MAP } from "@/lib/species-dictionary";
 
 // Color palette for individual species lines
 const SPECIES_PALETTE = [
@@ -16,11 +16,21 @@ const SPECIES_PALETTE = [
 
 const BACKGROUND_COLOR = "#737373";
 
+const HEBREW_CATEGORY_LABELS: Record<TaxaGroupKey, string> = {
+  mammals: "יונקים",
+  birds: "עופות",
+  butterflies: "פרפרים",
+  dragonflies: "שפיראים",
+  arthropods: "פרוקי רגליים",
+  plants: "צמחים",
+  other: "שאר המינים",
+};
+
 interface Props {
   /** All observations (unfiltered by deep dive) */
   allObservations: Observation[];
   /** The selected dashboard category */
-  category: TaxaGroupKey;
+  category: TaxaGroupKey | null;
   /** Set of selected species scientific names. Empty = "All" in category */
   selectedSpecies: Set<string>;
   /** Primary color of the category tab */
@@ -30,9 +40,7 @@ interface Props {
 const HEBREW_LETTER_REGEX = /[א-ת]/;
 
 function getSpeciesLabel(scientific_name: string, lang: "he" | "en"): string {
-  const entry = Object.values(speciesMap)
-    .flat()
-    .find((e: SpeciesInfo) => e.Scientific_Name === scientific_name);
+  const entry = SPECIES_MAP.get(scientific_name);
   if (!entry) return scientific_name;
   if (lang === "he") {
     if (entry.Hebrew_Name && entry.Hebrew_Name !== "N/A" && HEBREW_LETTER_REGEX.test(entry.Hebrew_Name)) {
@@ -82,7 +90,7 @@ export function DeepDiveTimeSeriesChart({ allObservations, category, selectedSpe
         if (!parsed) continue;
         const { sortKey, label } = parsed;
 
-        const isFocus = getTaxaGroup(o) === category;
+        const isFocus = !category || getTaxaGroup(o) === category;
         const seriesKey = isFocus ? FOCUS_KEY : BG_KEY;
 
         if (!countsMap.has(sortKey)) {
@@ -102,8 +110,8 @@ export function DeepDiveTimeSeriesChart({ allObservations, category, selectedSpe
         };
       });
 
-      const focusLabel = category;
-      const bgLabel = lang === "he" ? "שאר הקטגוריות" : "All Others";
+      const focusLabel = category ? HEBREW_CATEGORY_LABELS[category] : "כל הקטגוריות";
+      const bgLabel = "שאר הקטגוריות";
 
       return {
         chartData,
@@ -115,15 +123,15 @@ export function DeepDiveTimeSeriesChart({ allObservations, category, selectedSpe
       // SCENARIO B: Individual species + rest of category
       const selectedSet = selectedSpecies;
 
-      // Only look at observations in this category
-      const categoryObs = allObservations.filter((o) => getTaxaGroup(o) === category);
+      const categoryObs = category ? allObservations.filter((o) => getTaxaGroup(o) === category) : allObservations;
 
       for (const o of categoryObs) {
         const parsed = parseSortKey(o.observed_on);
         if (!parsed) continue;
         const { sortKey, label } = parsed;
 
-        const seriesKey = selectedSet.has(o.scientific_name) ? o.scientific_name : BG_KEY;
+        if (!selectedSet.has(o.scientific_name)) continue;
+        const seriesKey = o.scientific_name;
 
         if (!countsMap.has(sortKey)) {
           countsMap.set(sortKey, { label, counts: new Map() });
@@ -133,7 +141,7 @@ export function DeepDiveTimeSeriesChart({ allObservations, category, selectedSpe
       }
 
       const speciesKeys = Array.from(selectedSet);
-      const allKeys = [...speciesKeys, BG_KEY];
+      const allKeys = speciesKeys;
 
       const allSortKeys = Array.from(countsMap.keys()).sort((a, b) => a - b);
       const chartData = allSortKeys.map((sk) => {
@@ -145,10 +153,8 @@ export function DeepDiveTimeSeriesChart({ allObservations, category, selectedSpe
         return point;
       });
 
-      const seriesColors: Record<string, string> = { [BG_KEY]: BACKGROUND_COLOR };
-      const seriesLabels: Record<string, string> = {
-        [BG_KEY]: lang === "he" ? "שאר המינים בקטגוריה" : "Other species in category",
-      };
+      const seriesColors: Record<string, string> = {};
+      const seriesLabels: Record<string, string> = {};
 
       speciesKeys.forEach((sci, i) => {
         seriesColors[sci] = SPECIES_PALETTE[i % SPECIES_PALETTE.length];
@@ -187,7 +193,7 @@ export function DeepDiveTimeSeriesChart({ allObservations, category, selectedSpe
             <Legend
               content={() => (
                 <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs mt-1">
-                  {seriesKeys.map((key) => (
+                  {[...new Set(seriesKeys)].map((key) => (
                     <span key={key} className="inline-flex items-center gap-1">
                       <span
                         className="inline-block w-3 h-0.5 rounded"
@@ -199,7 +205,7 @@ export function DeepDiveTimeSeriesChart({ allObservations, category, selectedSpe
                 </div>
               )}
             />
-            {seriesKeys.map((key) => (
+            {[...new Set(seriesKeys)].map((key) => (
               <Line
                 key={key}
                 type="monotone"

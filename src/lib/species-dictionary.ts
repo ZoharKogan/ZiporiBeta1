@@ -1,20 +1,25 @@
-import speciesDictionaryData from "../../species_dictionary.json";
+import { speciesMap, type SpeciesInfo } from "./species-map";
 
-export type SpeciesDictionaryEntry = {
-  Scientific_Name: string;
-  Category: string;
-  Hebrew_Name: string;
-  English_Name: string;
-};
+export type SpeciesDictionaryEntry = SpeciesInfo;
 
-export const speciesDictionary: SpeciesDictionaryEntry[] = speciesDictionaryData;
-
+/**
+ * O(1) lookup maps pre-populated from the unified speciesMap dictionary.
+ */
 export const speciesDictionaryByScientificName = new Map<string, SpeciesDictionaryEntry>(
-  speciesDictionary.map((entry) => [entry.Scientific_Name, entry])
+  speciesMap.map((entry) => [entry.Scientific_Name, entry])
 );
 
+export const SPECIES_MAP = new Map<string, SpeciesInfo>(
+  speciesMap.map((entry) => [entry.Scientific_Name, entry])
+);
+
+/**
+ * Pre-built O(1) Map for species metadata lookups.
+ */
+export const speciesInfoByScientificName = new Map<string, SpeciesInfo>(SPECIES_MAP);
+
 export function lookupSpecies(scientificName: string): SpeciesDictionaryEntry | undefined {
-  return speciesDictionaryByScientificName.get(scientificName);
+  return speciesInfoByScientificName.get(scientificName);
 }
 
 export function getSpeciesHebrewName(scientificName: string): string | undefined {
